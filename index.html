@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>korsekode — 로그인</title>
+  <meta name="description" content="korsekode Local Login"/>
+  <style>
+    :root{
+      --bg:#111827; --card:#0b1223; --ink:#e5e7eb; --muted:#9ca3af;
+      --accent:#6f7dff; --ok:#10b981; --warn:#f59e0b; --err:#ef4444;
+      --border:rgba(255,255,255,.12); --radius:16px; --shadow:0 18px 60px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; min-height:100vh; color:var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple SD Gothic Neo","Noto Sans KR", sans-serif;
+      background:
+        radial-gradient(1200px 700px at 80% -10%, #3a2e8c 0%, rgba(58,46,140,0) 60%),
+        radial-gradient(1000px 600px at -20% 120%, #2a246f 0%, rgba(42,36,111,0) 60%),
+        var(--bg);
+      display:flex; align-items:center; justify-content:center; padding:24px;
+    }
+    .wrap{ width:min(440px, 94vw); background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px }
+    h1{margin:0 0 6px; font-size:22px}
+    p.lead{margin:0 0 14px; color:#d1d5db}
+    label{font-size:12px; color:var(--muted); display:block; margin:8px 0 6px}
+    input{
+      width:100%; padding:12px; border-radius:12px; background:#0d0c2b; color:#fff;
+      border:1px solid rgba(255,255,255,.12); outline:none; font-size:14px;
+    }
+    input:focus{ border-color:#8b95ff; box-shadow:0 0 0 3px rgba(139,149,255,.15) }
+    .btn{
+      width:100%; padding:12px; border-radius:12px; border:1px solid var(--border);
+      background:linear-gradient(180deg, #7f8aff, #5f6bff); color:#fff; font-weight:800; cursor:pointer;
+    }
+    .btn.ghost{ background:transparent }
+    .row{display:flex; gap:10px; align-items:center; justify-content:space-between}
+    .hint{font-size:12px; color:var(--muted)}
+    .ok{color:var(--ok)} .err{color:var(--err)} .warn{color:var(--warn)}
+    .sep{height:1px; background:var(--border); margin:16px 0}
+    details{ background:rgba(255,255,255,.03); border:1px solid var(--border); padding:12px; border-radius:12px }
+    summary{ cursor:pointer; font-weight:700 }
+    .brand{font-weight:800}
+  </style>
+</head>
+<body>
+  <div class="wrap" role="main" aria-label="로그인 박스">
+    <h1><span class="brand">korsekode</span> 로그인</h1>
+    <p class="lead">내부용 로컬 로그인입니다. 성공 시 메인으로 이동합니다.</p>
+
+    <label for="email">이메일</label>
+    <input id="email" type="email" placeholder="you@company.com" autocomplete="username"/>
+
+    <label for="pw">비밀번호</label>
+    <input id="pw" type="password" placeholder="영문+숫자 8자 이상" autocomplete="current-password"/>
+
+    <div class="row" style="margin:10px 0">
+      <label class="hint" style="display:flex; align-items:center; gap:8px">
+        <input id="keep" type="checkbox" checked/> 로그인 유지(자동 로그인)
+      </label>
+      <button id="btnLogin" class="btn" style="max-width:160px">로그인</button>
+    </div>
+    <div id="msg" class="hint">· 동일 브라우저에서 자동으로 유지됩니다.</div>
+
+    <div class="sep"></div>
+
+    <details>
+      <summary>최초 등록(계정이 없을 때)</summary>
+      <div style="margin-top:10px">
+        <label for="regEmail">이메일</label>
+        <input id="regEmail" type="email" placeholder="you@company.com" autocomplete="email"/>
+        <div class="row" style="margin-top:10px">
+          <div style="flex:1">
+            <label for="regPw">비밀번호</label>
+            <input id="regPw" type="password" placeholder="8자 이상" autocomplete="new-password"/>
+          </div>
+          <div style="flex:1">
+            <label for="regPw2">비밀번호 확인</label>
+            <input id="regPw2" type="password" placeholder="다시 입력" autocomplete="new-password"/>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button id="btnRegister" class="btn">등록</button>
+          <button id="btnClear" class="btn ghost" style="max-width:140px">초기화</button>
+        </div>
+        <div id="regMsg" class="hint">· 로컬 저장: 이 브라우저에만 저장됩니다.</div>
+      </div>
+    </details>
+  </div>
+
+  <script>
+    // ===== 설정 =====
+    const TARGET_URL = 'https://jjkim-png.github.io/korsekode_x2/'; // 로그인 성공 시 이동
+    const KEY_EMAIL = 'kk_email';
+    const KEY_HASH  = 'kk_hash';      // SHA-256(email|password) base64
+    const KEY_KEEP  = 'kk_keep';
+    const KEY_SESS  = 'kk_session';   // 세션 로그인 플래그
+
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    const $ = (s)=>document.querySelector(s);
+    const msg = $('#msg'); const regMsg = $('#regMsg');
+
+    async function sha256Base64(text){
+      const buf = new TextEncoder().encode(text);
+      const hash = await crypto.subtle.digest('SHA-256', buf);
+      const bytes = new Uint8Array(hash);
+      // base64
+      let bin = ''; bytes.forEach(b=> bin += String.fromCharCode(b));
+      return btoa(bin);
+    }
+
+    function setMsg(el, text, cls='hint'){
+      el.textContent = text;
+      el.className = cls;
+    }
+
+    function isAuthed(){
+      const keep = localStorage.getItem(KEY_KEEP) === '1';
+      const sess = sessionStorage.getItem(KEY_SESS) === '1';
+      return keep || sess;
+    }
+
+    function redirect(){ window.location.replace(TARGET_URL); }
+
+    // 자동 로그인
+    (function auto(){
+      if(isAuthed()){
+        setMsg(msg, '자동 로그인 상태입니다. 이동합니다…', 'hint ok');
+        setTimeout(redirect, 300);
+      }
+    })();
+
+    // 로그인
+    $('#btnLogin').addEventListener('click', async ()=>{
+      const email = $('#email').value.trim();
+      const pw = $('#pw').value;
+      const keep = $('#keep').checked;
+
+      if(!EMAIL_RE.test(email)) return setMsg(msg, '✋ 이메일 형식이 올바르지 않습니다.', 'hint err');
+      if((pw||'').length<8) return setMsg(msg, '✋ 비밀번호는 8자 이상이어야 합니다.', 'hint err');
+
+      const storedEmail = localStorage.getItem(KEY_EMAIL);
+      const storedHash  = localStorage.getItem(KEY_HASH);
+      if(!storedEmail || !storedHash){
+        return setMsg(msg, '등록된 계정이 없습니다. 아래 “최초 등록”에서 먼저 계정을 만드세요.', 'hint warn');
+      }
+      const inputHash = await sha256Base64(`${email}|${pw}`);
+      if(email!==storedEmail || inputHash!==storedHash){
+        return setMsg(msg, '이메일 또는 비밀번호가 올바르지 않습니다.', 'hint err');
+      }
+
+      if(keep){
+        localStorage.setItem(KEY_KEEP, '1');     // 영구 유지
+        sessionStorage.setItem(KEY_SESS, '1');   // 현재 탭 즉시 인증
+      }else{
+        localStorage.removeItem(KEY_KEEP);
+        sessionStorage.setItem(KEY_SESS, '1');   // 세션만 유지
+      }
+      setMsg(msg, '✅ 로그인 성공. 이동합니다…', 'hint ok');
+      setTimeout(redirect, 250);
+    });
+
+    // 등록
+    $('#btnRegister').addEventListener('click', async ()=>{
+      const email = $('#regEmail').value.trim();
+      const pw = $('#regPw').value;
+      const pw2 = $('#regPw2').value;
+
+      if(!EMAIL_RE.test(email)) return setMsg(regMsg, '✋ 이메일 형식이 올바르지 않습니다.', 'hint err');
+      if((pw||'').length<8) return setMsg(regMsg, '✋ 비밀번호는 8자 이상이어야 합니다.', 'hint err');
+      if(pw!==pw2) return setMsg(regMsg, '✋ 비밀번호 확인이 일치하지 않습니다.', 'hint err');
+
+      const hash = await sha256Base64(`${email}|${pw}`);
+      localStorage.setItem(KEY_EMAIL, email);
+      localStorage.setItem(KEY_HASH, hash);
+      setMsg(regMsg, '✅ 등록 완료. 상단 로그인 섹션에서 로그인하세요.', 'hint ok');
+    });
+
+    // 초기화
+    $('#btnClear').addEventListener('click', ()=>{
+      if(confirm('로컬에 저장된 로그인 정보를 삭제할까요?')){
+        localStorage.removeItem(KEY_EMAIL);
+        localStorage.removeItem(KEY_HASH);
+        localStorage.removeItem(KEY_KEEP);
+        sessionStorage.removeItem(KEY_SESS);
+        setMsg(regMsg, '🗑️ 초기화 완료. 새로운 계정을 등록할 수 있습니다.', 'hint ok');
+        setMsg(msg, '· 동일 브라우저에서 자동으로 유지됩니다.', 'hint');
+      }
+    });
+
+    // Enter 제출
+    ['email','pw','regEmail','regPw','regPw2'].forEach(id=>{
+      const el = document.getElementById(id);
+      el?.addEventListener('keydown', (e)=>{
+        if(e.key==='Enter'){
+          if(id.startsWith('reg')) $('#btnRegister').click();
+          else $('#btnLogin').click();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
