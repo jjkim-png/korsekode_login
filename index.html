@@ -1,206 +1,292 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>korsekode — 로그인</title>
-  <meta name="description" content="korsekode Local Login"/>
-  <style>
-    :root{
-      --bg:#111827; --card:#0b1223; --ink:#e5e7eb; --muted:#9ca3af;
-      --accent:#6f7dff; --ok:#10b981; --warn:#f59e0b; --err:#ef4444;
-      --border:rgba(255,255,255,.12); --radius:16px; --shadow:0 18px 60px rgba(0,0,0,.35);
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0; min-height:100vh; color:var(--ink);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple SD Gothic Neo","Noto Sans KR", sans-serif;
-      background:
-        radial-gradient(1200px 700px at 80% -10%, #3a2e8c 0%, rgba(58,46,140,0) 60%),
-        radial-gradient(1000px 600px at -20% 120%, #2a246f 0%, rgba(42,36,111,0) 60%),
-        var(--bg);
-      display:flex; align-items:center; justify-content:center; padding:24px;
-    }
-    .wrap{ width:min(440px, 94vw); background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-      border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px }
-    h1{margin:0 0 6px; font-size:22px}
-    p.lead{margin:0 0 14px; color:#d1d5db}
-    label{font-size:12px; color:var(--muted); display:block; margin:8px 0 6px}
-    input{
-      width:100%; padding:12px; border-radius:12px; background:#0d0c2b; color:#fff;
-      border:1px solid rgba(255,255,255,.12); outline:none; font-size:14px;
-    }
-    input:focus{ border-color:#8b95ff; box-shadow:0 0 0 3px rgba(139,149,255,.15) }
-    .btn{
-      width:100%; padding:12px; border-radius:12px; border:1px solid var(--border);
-      background:linear-gradient(180deg, #7f8aff, #5f6bff); color:#fff; font-weight:800; cursor:pointer;
-    }
-    .btn.ghost{ background:transparent }
-    .row{display:flex; gap:10px; align-items:center; justify-content:space-between}
-    .hint{font-size:12px; color:var(--muted)}
-    .ok{color:var(--ok)} .err{color:var(--err)} .warn{color:var(--warn)}
-    .sep{height:1px; background:var(--border); margin:16px 0}
-    details{ background:rgba(255,255,255,.03); border:1px solid var(--border); padding:12px; border-radius:12px }
-    summary{ cursor:pointer; font-weight:700 }
-    .brand{font-weight:800}
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>TK22 — Kodeck (라운딩 경량 기록기 • 모바일)</title>
+<style>
+  :root{
+    --brand:#2b2363; --accent:#4b3dd1; --bg:#f6f7fb; --card:#ffffff; --ink:#0f172a;
+    --muted:#6b7280; --border:#e6e8ef; --good:#10b981; --bad:#ef4444; --warn:#f59e0b;
+    --radius:16px; --shadow:0 10px 28px rgba(0,0,0,.08);
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--ink);
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;}
+  header{position:sticky; top:0; z-index:60; background:var(--brand); color:#fff; padding:14px 16px}
+  header h1{margin:0; font-size:16px; letter-spacing:.2px}
+  .container{max-width:720px; margin:0 auto; padding:12px 12px 120px}
+  section{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); margin:12px 0; padding:12px}
+  h2{font-size:15px; margin:0 0 8px}
+  label{display:block; font-size:12px; color:#374151; margin:6px 0 6px}
+  input,select,button{width:100%; padding:14px 14px; border-radius:14px; border:1px solid #d7d9e0; background:#fff; outline:none; font-size:16px}
+  input:focus,select:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(75,61,209,.18)}
+  .row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .seg{display:flex; gap:6px}
+  .seg button{flex:1; padding:12px; border-radius:12px; border:1px solid var(--border); background:#fff; font-weight:700}
+  .seg button.active{background:#111827; color:#fff; border-color:#111827}
+  .seg.small button{padding:8px; font-size:13px}
+  .pill{display:inline-flex; align-items:center; justify-content:center; height:36px; padding:0 12px; border-radius:999px; background:#eef2ff; color:#3730a3; font-size:13px; border:1px solid #dfe3ff}
+  .chips{display:flex; gap:6px; flex-wrap:wrap}
+  .chip{display:inline-flex; align-items:center; justify-content:center; padding:8px 10px; border-radius:10px; background:#f3f4f6; border:1px solid var(--border); font-size:14px; min-width:48px}
+  .small{font-size:12px; color:var(--muted)}
+  .mono{font-family: ui-monospace, SFMono-Regular, Menlo, monospace}
+  canvas{width:100%; max-width:320px; aspect-ratio:1/1; background:#ffffff; border-radius:12px; border:1px solid var(--border); touch-action:manipulation}
+  .sticky{position:fixed; bottom:0; left:0; right:0; z-index:70; background:#fff; border-top:1px solid var(--border);
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom)); display:flex; gap:8px; flex-wrap:wrap; box-shadow:0 -10px 28px rgba(0,0,0,.06)}
+  .toast{position:fixed; bottom:84px; left:50%; transform:translateX(-50%); background:#111827; color:#fff; padding:10px 14px; border-radius:999px; font-size:14px; opacity:0; pointer-events:none; transition:opacity .25s; z-index:80}
+  .toast.show{opacity:1}
+  .top-hint{position:sticky; top:48px; z-index:59; margin:0 12px; display:none}
+  .top-hint .pill{background:#fff7ed; border-color:#fed7aa; color:#9a3412}
+  table{width:100%; border-collapse:collapse}
+  th,td{font-size:12px; border-bottom:1px solid #eee; padding:8px; text-align:center; white-space:nowrap}
+  /* 강조 애니메이션 */
+  @keyframes blinkRow { 0%{background:#fff8c5} 100%{background:transparent} }
+  .row-blink{animation:blinkRow .8s ease-out 1}
+  /* 포커스 하이라이트 */
+  .focus-ring{box-shadow:0 0 0 3px rgba(245,158,11,.35) inset; border-radius:12px; transition:box-shadow .25s}
+  /* 미리보기 배지 */
+  .preview{display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:#eef2ff; border:1px solid #dfe3ff; color:#3730a3; font-weight:700; font-size:13px}
+</style>
 </head>
 <body>
-  <div class="wrap" role="main" aria-label="로그인 박스">
-    <h1><span class="brand">korsekode</span> 로그인</h1>
-    <p class="lead">내부용 로컬 로그인입니다. 성공 시 메인으로 이동합니다.</p>
+  <header><h1>TK22 — Kodeck (라운딩 경량 기록기)</h1></header>
+  <div class="top-hint" id="par3Hint"><span class="pill">Par3 규칙 적용: 티샷은 APP(파온)</span></div>
 
-    <label for="email">이메일</label>
-    <input id="email" type="email" placeholder="you@company.com" autocomplete="username"/>
+  <div class="container">
 
-    <label for="pw">비밀번호</label>
-    <input id="pw" type="password" placeholder="영문+숫자 8자 이상" autocomplete="current-password"/>
-
-    <div class="row" style="margin:10px 0">
-      <label class="hint" style="display:flex; align-items:center; gap:8px">
-        <input id="keep" type="checkbox" checked/> 로그인 유지(자동 로그인)
-      </label>
-      <button id="btnLogin" class="btn" style="max-width:160px">로그인</button>
-    </div>
-    <div id="msg" class="hint">· 동일 브라우저에서 자동으로 유지됩니다.</div>
-
-    <div class="sep"></div>
-
-    <details>
-      <summary>최초 등록(계정이 없을 때)</summary>
-      <div style="margin-top:10px">
-        <label for="regEmail">이메일</label>
-        <input id="regEmail" type="email" placeholder="you@company.com" autocomplete="email"/>
-        <div class="row" style="margin-top:10px">
-          <div style="flex:1">
-            <label for="regPw">비밀번호</label>
-            <input id="regPw" type="password" placeholder="8자 이상" autocomplete="new-password"/>
-          </div>
-          <div style="flex:1">
-            <label for="regPw2">비밀번호 확인</label>
-            <input id="regPw2" type="password" placeholder="다시 입력" autocomplete="new-password"/>
+    <!-- 라운드/홀 -->
+    <section id="round">
+      <h2>라운드 / 홀</h2>
+      <div class="row">
+        <div>
+          <label>Hole</label>
+          <div class="seg">
+            <button id="btnHolePrev" class="ghost" style="max-width:80px">◀</button>
+            <input id="inpHole" type="number" min="1" max="18" value="1"/>
+            <button id="btnHoleNext" class="ghost" style="max-width:80px">▶</button>
           </div>
         </div>
-        <div class="row" style="margin-top:12px">
-          <button id="btnRegister" class="btn">등록</button>
-          <button id="btnClear" class="btn ghost" style="max-width:140px">초기화</button>
+        <div>
+          <label>Par</label>
+          <div class="seg" id="segPar">
+            <button data-par="3">3</button>
+            <button data-par="4" class="active">4</button>
+            <button data-par="5">5</button>
+          </div>
         </div>
-        <div id="regMsg" class="hint">· 로컬 저장: 이 브라우저에만 저장됩니다.</div>
       </div>
-    </details>
+      <div class="row" style="margin-top:6px">
+        <div>
+          <label>Sequence(샷 번호)</label>
+          <div class="seg">
+            <div class="pill" style="flex:1;text-align:center" id="lblSeq">#1</div>
+            <button id="btnResetSeq" class="ghost" style="max-width:120px">리셋</button>
+          </div>
+        </div>
+        <div>
+          <label>투온 시도 (Par5)</label>
+          <div class="seg" id="segTwoOn">
+            <button data-twoon="off" class="active">X</button>
+            <button data-twoon="on">O</button>
+          </div>
+        </div>
+      </div>
+      <div class="small">* Par3에서 <b>티샷</b>을 누르면 자동으로 <b>APP(파온)</b>으로 전환됩니다. (상단 PILL 상시 표기)</div>
+    </section>
+
+    <!-- 페이즈 -->
+    <section id="phase">
+      <h2>페이즈 선택</h2>
+      <div class="seg" id="segPhase">
+        <button data-phase="tee" class="active">티샷</button>
+        <button data-phase="approach">파온(중거리)</button>
+        <button data-phase="around">30m 이내</button>
+        <button data-phase="putt">퍼팅</button>
+      </div>
+    </section>
+
+    <!-- 입력 -->
+    <section id="form">
+      <h2>입력</h2>
+
+      <!-- 거리 -->
+      <div class="row">
+        <div>
+          <label>현재 남은거리 (m)</label>
+          <input id="inpCurM" type="number" inputmode="decimal" placeholder="예: 380 (티샷은 핀까지 총거리)"/>
+        </div>
+        <div>
+          <label>다음 남은거리 (m)</label>
+          <input id="inpNextM" type="number" inputmode="decimal" placeholder="예: 150"/>
+        </div>
+      </div>
+
+      <!-- 동적 칩(phase별 자동 구성) -->
+      <div class="chips" id="chips" style="margin-top:6px"></div>
+
+      <!-- 옵션 -->
+      <div class="row" style="margin-top:6px">
+        <div>
+          <label>클럽 (선택)</label>
+          <select id="ddClub">
+            <option value="">-</option>
+            <option>Dr</option><option>3w</option><option>2i</option><option>3i</option><option>4i</option>
+            <option>5i</option><option>6i</option><option>7i</option><option>8i</option><option>9i</option>
+            <option>pw</option><option>50</option><option>52</option><option>54</option><option>56</option>
+            <option>58</option><option>60</option><option>putter</option>
+          </select>
+        </div>
+        <div>
+          <label>어프로치 타입 (30m 이내)</label>
+          <select id="ddApType">
+            <option value="">-</option>
+            <option value="basic">기본</option>
+            <option value="running">러닝</option>
+            <option value="flop">플롭</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 벌타 -->
+      <div style="margin-top:8px">
+        <label>벌타</label>
+        <div class="row">
+          <div id="penTypeWrap">
+            <div class="seg small" id="segPenaltyType">
+              <button data-pt="none" class="active">없음</button>
+              <button data-pt="HAZ">HAZ(+1)</button>
+              <button data-pt="OB">OB(+2)</button>
+            </div>
+          </div>
+          <div id="penDirWrap">
+            <div class="seg small" id="segPenaltyDir">
+              <button data-pd="" class="active">-</button>
+              <button data-pd="L">L</button>
+              <button data-pd="R">R</button>
+              <button data-pd="Long">Long</button>
+              <button data-pd="Short">Short</button>
+            </div>
+          </div>
+        </div>
+        <div class="small" id="seqPreview" style="margin-top:6px;display:none">
+          <span class="preview" id="seqPreviewPill">다음 샷 미리보기</span>
+        </div>
+      </div>
+
+      <!-- 캔버스(조건부: APP(투온 O) / 30m 이내) -->
+      <div id="canvasWrap" style="margin-top:10px; display:none">
+        <div class="row">
+          <div>
+            <label>그린 반지름 (m) — 스케일</label>
+            <input id="inpGreenR" type="number" value="15"/>
+          </div>
+          <div>
+            <label>좌표 결과 (m, 핀 기준)</label>
+            <div class="pill mono" id="lblXY">x: 0.0 / y: 0.0 (dist 0.0)</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:center; margin-top:8px">
+          <canvas id="greenCanvas" width="320" height="320"></canvas>
+        </div>
+        <div class="small" style="margin-top:4px">
+          ● 클릭/터치: 핀 기준 (x,y) 기록 — <b>그린 원=반지름 15m</b>, 외곽 연한 링=그린 주변(30m).  
+          ● <b>회색 점선 링</b>은 입력한 <b>다음 남은거리</b> 반지름 가이드입니다.
+        </div>
+        <div style="margin-top:6px">
+          <button id="btnClearDot" class="chip" style="border-radius:999px">좌표 초기화</button>
+        </div>
+      </div>
+
+      <!-- 퍼팅 전용 -->
+      <div id="puttWrap" style="margin-top:8px; display:none">
+        <div class="seg small" id="segPuttHoled">
+          <button data-holed="false" class="active">미스</button>
+          <button data-holed="true">홀인</button>
+        </div>
+        <div class="small" style="margin-top:6px">* 퍼팅은 캔버스 비활성(속도 우선). 직전 <b>다음 남은거리</b>가 자동으로 현재거리로 이어집니다.</div>
+      </div>
+    </section>
+
+    <!-- 샷 리스트 -->
+    <section id="shots">
+      <h2>샷 리스트</h2>
+      <div style="overflow:auto">
+        <table id="tblShots">
+          <thead><tr>
+            <th>Hole</th><th>Par</th><th>#</th><th>Phase</th><th>cur→next(m)</th>
+            <th>클럽</th><th>투온</th><th>벌타</th><th>좌표</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
   </div>
 
-  <script>
-    // ===== 설정 =====
-    const TARGET_URL = 'https://jjkim-png.github.io/korsekode_x2/'; // 로그인 성공 시 이동
-    const KEY_EMAIL = 'kk_email';
-    const KEY_HASH  = 'kk_hash';      // SHA-256(email|password) base64
-    const KEY_KEEP  = 'kk_keep';
-    const KEY_SESS  = 'kk_session';   // 세션 로그인 플래그
+  <!-- 고정 액션 -->
+  <div class="sticky">
+    <button class="btn brand" id="btnAddShot" style="flex:2">샷 추가</button>
+    <button class="btn" id="btnEndHole" style="flex:1">홀 종료</button>
+    <button class="btn ghost" id="btnUndo" style="flex:1">되돌리기</button>
+    <button class="btn warn" id="btnExport" style="flex:1">내보내기(JSON)</button>
+  </div>
 
-    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  <div class="toast" id="toast"></div>
 
-    const $ = (s)=>document.querySelector(s);
-    const msg = $('#msg'); const regMsg = $('#regMsg');
+<script>
+(function(){
+  // ===== Utils =====
+  const $ = s=>document.querySelector(s), $$ = s=>Array.from(document.querySelectorAll(s));
+  const clamp = (x,min,max)=>Math.max(min,Math.min(max,x));
+  const toast = (msg)=>{ const t=$('#toast'); t.textContent=msg; t.classList.add('show');
+    clearTimeout(toast._id); toast._id=setTimeout(()=>t.classList.remove('show'), 1600); };
 
-    async function sha256Base64(text){
-      const buf = new TextEncoder().encode(text);
-      const hash = await crypto.subtle.digest('SHA-256', buf);
-      const bytes = new Uint8Array(hash);
-      // base64
-      let bin = ''; bytes.forEach(b=> bin += String.fromCharCode(b));
-      return btoa(bin);
-    }
+  // ===== State =====
+  const nowId = ()=>`R-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+  let round = JSON.parse(localStorage.getItem('kodeck_round')||'null');
+  if(!round){ round = { roundId: nowId(), date: new Date().toISOString(), parMap:{}, shots:[] }; }
+  let hole=1, par=4, seq=1, phase='tee', twoOnTry=false;
+  let penaltyType='none', penaltyDir='';
+  let lastPoint=null;
 
-    function setMsg(el, text, cls='hint'){
-      el.textContent = text;
-      el.className = cls;
-    }
+  // ===== Elements =====
+  const inpHole = $('#inpHole'), lblSeq = $('#lblSeq');
+  const segPar = $('#segPar'), segPhase = $('#segPhase'), segTwoOn=$('#segTwoOn');
+  const inpCurM = $('#inpCurM'), inpNextM = $('#inpNextM'), ddClub=$('#ddClub'), ddApType=$('#ddApType');
+  const segPenaltyType = $('#segPenaltyType'), segPenaltyDir = $('#segPenaltyDir');
+  const penDirWrap = $('#penDirWrap');
+  const canvasWrap = $('#canvasWrap'), greenCanvas = $('#greenCanvas'), lblXY = $('#lblXY'), inpGreenR = $('#inpGreenR');
+  const puttWrap = $('#puttWrap'), par3Hint = $('#par3Hint');
+  const chipsBox = $('#chips'), seqPreview = $('#seqPreview'), seqPreviewPill = $('#seqPreviewPill');
 
-    function isAuthed(){
-      const keep = localStorage.getItem(KEY_KEEP) === '1';
-      const sess = sessionStorage.getItem(KEY_SESS) === '1';
-      return keep || sess;
-    }
+  // ===== Local Save =====
+  function saveLocal(){ localStorage.setItem('kodeck_round', JSON.stringify(round)); }
 
-    function redirect(){ window.location.replace(TARGET_URL); }
+  // ===== Hole / Par =====
+  function applySeq(v){ seq=v; lblSeq.textContent = '#'+seq; updatePreview(); }
+  function applyPar(p){
+    par = p; $$('#segPar button').forEach(b=>b.classList.toggle('active', Number(b.dataset.par)===par));
+    // 투온 스위치 시각
+    $('#segTwoOn').style.opacity = (par===5?1:0.5);
+    if(par!==5) applyTwoOn(false);
+    updatePar3Hint();
+  }
+  function setHole(h){
+    hole = clamp(h,1,18); inpHole.value=hole; applySeq(1);
+    if(round.parMap[hole]==null){ round.parMap[hole]=par; saveLocal(); }
+    applyPar(round.parMap[hole]||par);
+    toast(`Hole ${hole} · Par ${par}${par===5?` · 투온 ${twoOnTry?'O':'X'}`:''}`);
+  }
+  inpHole.addEventListener('change', ()=> setHole(Number(inpHole.value||1)));
+  $('#btnHolePrev').addEventListener('click', ()=> setHole(hole-1));
+  $('#btnHoleNext').addEventListener('click', ()=> setHole(hole+1));
+  $('#btnResetSeq').addEventListener('click', ()=>{ applySeq(1); toast('시퀀스 리셋'); });
 
-    // 자동 로그인
-    (function auto(){
-      if(isAuthed()){
-        setMsg(msg, '자동 로그인 상태입니다. 이동합니다…', 'hint ok');
-        setTimeout(redirect, 300);
-      }
-    })();
+  segPar.addEventListener('click', (e)=>{
+    const btn=e.target.closest('button'); if(!btn) return;
+    const p = Number(btn.dataset.par); applyPar(p); round.parMap[hole]=par; saveLocal(); applyPhase(phase);
+  });
 
-    // 로그인
-    $('#btnLogin').addEventListener('click', async ()=>{
-      const email = $('#email').value.trim();
-      const pw = $('#pw').value;
-      const keep = $('#keep').checked;
-
-      if(!EMAIL_RE.test(email)) return setMsg(msg, '✋ 이메일 형식이 올바르지 않습니다.', 'hint err');
-      if((pw||'').length<8) return setMsg(msg, '✋ 비밀번호는 8자 이상이어야 합니다.', 'hint err');
-
-      const storedEmail = localStorage.getItem(KEY_EMAIL);
-      const storedHash  = localStorage.getItem(KEY_HASH);
-      if(!storedEmail || !storedHash){
-        return setMsg(msg, '등록된 계정이 없습니다. 아래 “최초 등록”에서 먼저 계정을 만드세요.', 'hint warn');
-      }
-      const inputHash = await sha256Base64(`${email}|${pw}`);
-      if(email!==storedEmail || inputHash!==storedHash){
-        return setMsg(msg, '이메일 또는 비밀번호가 올바르지 않습니다.', 'hint err');
-      }
-
-      if(keep){
-        localStorage.setItem(KEY_KEEP, '1');     // 영구 유지
-        sessionStorage.setItem(KEY_SESS, '1');   // 현재 탭 즉시 인증
-      }else{
-        localStorage.removeItem(KEY_KEEP);
-        sessionStorage.setItem(KEY_SESS, '1');   // 세션만 유지
-      }
-      setMsg(msg, '✅ 로그인 성공. 이동합니다…', 'hint ok');
-      setTimeout(redirect, 250);
-    });
-
-    // 등록
-    $('#btnRegister').addEventListener('click', async ()=>{
-      const email = $('#regEmail').value.trim();
-      const pw = $('#regPw').value;
-      const pw2 = $('#regPw2').value;
-
-      if(!EMAIL_RE.test(email)) return setMsg(regMsg, '✋ 이메일 형식이 올바르지 않습니다.', 'hint err');
-      if((pw||'').length<8) return setMsg(regMsg, '✋ 비밀번호는 8자 이상이어야 합니다.', 'hint err');
-      if(pw!==pw2) return setMsg(regMsg, '✋ 비밀번호 확인이 일치하지 않습니다.', 'hint err');
-
-      const hash = await sha256Base64(`${email}|${pw}`);
-      localStorage.setItem(KEY_EMAIL, email);
-      localStorage.setItem(KEY_HASH, hash);
-      setMsg(regMsg, '✅ 등록 완료. 상단 로그인 섹션에서 로그인하세요.', 'hint ok');
-    });
-
-    // 초기화
-    $('#btnClear').addEventListener('click', ()=>{
-      if(confirm('로컬에 저장된 로그인 정보를 삭제할까요?')){
-        localStorage.removeItem(KEY_EMAIL);
-        localStorage.removeItem(KEY_HASH);
-        localStorage.removeItem(KEY_KEEP);
-        sessionStorage.removeItem(KEY_SESS);
-        setMsg(regMsg, '🗑️ 초기화 완료. 새로운 계정을 등록할 수 있습니다.', 'hint ok');
-        setMsg(msg, '· 동일 브라우저에서 자동으로 유지됩니다.', 'hint');
-      }
-    });
-
-    // Enter 제출
-    ['email','pw','regEmail','regPw','regPw2'].forEach(id=>{
-      const el = document.getElementById(id);
-      el?.addEventListener('keydown', (e)=>{
-        if(e.key==='Enter'){
-          if(id.startsWith('reg')) $('#btnRegister').click();
-          else $('#btnLogin').click();
-        }
-      });
-    });
-  </script>
-</body>
-</html>
+  // ===== Phase / Two-on =====
+  function updatePa
