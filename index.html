@@ -1,292 +1,596 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>TK22 — Kodeck (라운딩 경량 기록기 • 모바일)</title>
-<style>
-  :root{
-    --brand:#2b2363; --accent:#4b3dd1; --bg:#f6f7fb; --card:#ffffff; --ink:#0f172a;
-    --muted:#6b7280; --border:#e6e8ef; --good:#10b981; --bad:#ef4444; --warn:#f59e0b;
-    --radius:16px; --shadow:0 10px 28px rgba(0,0,0,.08);
-  }
-  *{box-sizing:border-box}
-  body{margin:0; background:var(--bg); color:var(--ink);
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;}
-  header{position:sticky; top:0; z-index:60; background:var(--brand); color:#fff; padding:14px 16px}
-  header h1{margin:0; font-size:16px; letter-spacing:.2px}
-  .container{max-width:720px; margin:0 auto; padding:12px 12px 120px}
-  section{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); margin:12px 0; padding:12px}
-  h2{font-size:15px; margin:0 0 8px}
-  label{display:block; font-size:12px; color:#374151; margin:6px 0 6px}
-  input,select,button{width:100%; padding:14px 14px; border-radius:14px; border:1px solid #d7d9e0; background:#fff; outline:none; font-size:16px}
-  input:focus,select:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(75,61,209,.18)}
-  .row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-  .seg{display:flex; gap:6px}
-  .seg button{flex:1; padding:12px; border-radius:12px; border:1px solid var(--border); background:#fff; font-weight:700}
-  .seg button.active{background:#111827; color:#fff; border-color:#111827}
-  .seg.small button{padding:8px; font-size:13px}
-  .pill{display:inline-flex; align-items:center; justify-content:center; height:36px; padding:0 12px; border-radius:999px; background:#eef2ff; color:#3730a3; font-size:13px; border:1px solid #dfe3ff}
-  .chips{display:flex; gap:6px; flex-wrap:wrap}
-  .chip{display:inline-flex; align-items:center; justify-content:center; padding:8px 10px; border-radius:10px; background:#f3f4f6; border:1px solid var(--border); font-size:14px; min-width:48px}
-  .small{font-size:12px; color:var(--muted)}
-  .mono{font-family: ui-monospace, SFMono-Regular, Menlo, monospace}
-  canvas{width:100%; max-width:320px; aspect-ratio:1/1; background:#ffffff; border-radius:12px; border:1px solid var(--border); touch-action:manipulation}
-  .sticky{position:fixed; bottom:0; left:0; right:0; z-index:70; background:#fff; border-top:1px solid var(--border);
-    padding:10px 12px calc(10px + env(safe-area-inset-bottom)); display:flex; gap:8px; flex-wrap:wrap; box-shadow:0 -10px 28px rgba(0,0,0,.06)}
-  .toast{position:fixed; bottom:84px; left:50%; transform:translateX(-50%); background:#111827; color:#fff; padding:10px 14px; border-radius:999px; font-size:14px; opacity:0; pointer-events:none; transition:opacity .25s; z-index:80}
-  .toast.show{opacity:1}
-  .top-hint{position:sticky; top:48px; z-index:59; margin:0 12px; display:none}
-  .top-hint .pill{background:#fff7ed; border-color:#fed7aa; color:#9a3412}
-  table{width:100%; border-collapse:collapse}
-  th,td{font-size:12px; border-bottom:1px solid #eee; padding:8px; text-align:center; white-space:nowrap}
-  /* 강조 애니메이션 */
-  @keyframes blinkRow { 0%{background:#fff8c5} 100%{background:transparent} }
-  .row-blink{animation:blinkRow .8s ease-out 1}
-  /* 포커스 하이라이트 */
-  .focus-ring{box-shadow:0 0 0 3px rgba(245,158,11,.35) inset; border-radius:12px; transition:box-shadow .25s}
-  /* 미리보기 배지 */
-  .preview{display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:#eef2ff; border:1px solid #dfe3ff; color:#3730a3; font-weight:700; font-size:13px}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kodeck — On‑Course Quick Log (v1)</title>
+  <style>
+    :root{
+      --bg:#0b0f14;      /* deep navy for glare control */
+      --ink:#e8ecf1;     /* high-contrast text */
+      --muted:#9aa5b1;   
+      --accent:#58a6ff;  /* focus ring */
+      --ok:#10b981;      /* GIR / success */
+      --warn:#f59e0b;    /* miss */
+      --bad:#ef4444;     /* penalty */
+      --card:#11161d;    /* panels */
+      --chip:#1a212b;    /* chip bg */
+      --border:#202a36;
+      --btn:#1f2937;     /* buttons */
+      --btnActive:#334155;
+      --radius:18px;
+      --shadow:0 10px 24px rgba(0,0,0,.35);
+      --tap:20px; /* big hit area */
+    }
+
+    html,body{height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Pretendard,Apple SD Gothic Neo,Noto Sans,Arial,sans-serif;}
+    *{box-sizing:border-box}
+    button{appearance:none;border:0;cursor:pointer}
+
+    .wrap{max-width:820px;margin:0 auto;padding:16px 16px 120px}
+    header{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,rgba(11,15,20,.95),rgba(11,15,20,.75));backdrop-filter:blur(6px);border-bottom:1px solid var(--border)}
+    .top{
+      display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 8px
+    }
+    .brand{display:flex;align-items:center;gap:10px}
+    .brand h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.3px}
+    .tag{font-size:12px;color:var(--muted)}
+
+    .bar{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;padding:8px}
+    .dot{height:16px;border-radius:8px;background:var(--chip);border:1px solid var(--border)}
+    .dot.ok{background:linear-gradient(180deg,#065f46,#10b981)}
+    .dot.warn{background:linear-gradient(180deg,#7c2d12,#f59e0b)}
+    .dot.bad{background:linear-gradient(180deg,#7f1d1d,#ef4444)}
+
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;margin-top:12px}
+    .section-title{font-size:13px;color:var(--muted);letter-spacing:.3px;margin:0 0 8px 2px}
+
+    .row{display:flex;flex-wrap:wrap;gap:8px}
+    .row > *{flex:1 1 auto}
+
+    .slot{background:var(--chip);border:1px solid var(--border);border-radius:14px;padding:10px}
+    .slot h3{font-size:13px;color:var(--muted);margin:0 0 6px}
+
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .grid-5{grid-template-columns:repeat(5,1fr)}
+    .grid-3{grid-template-columns:repeat(3,1fr)}
+    .grid-2{grid-template-columns:repeat(2,1fr)}
+
+    .btn{background:var(--btn);border:1px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;font-weight:700;font-size:16px;line-height:1;min-height:54px}
+    .btn.small{padding:10px;font-size:14px;min-height:44px}
+    .btn:active{transform:translateY(1px)}
+    .btn[aria-pressed="true"], .btn.active{background:var(--btnActive);outline:2px solid var(--accent)}
+    .btn.ok{background:#064e3b;border-color:#065f46}
+
+    .pill{display:inline-flex;align-items:center;gap:8px;background:var(--chip);border:1px solid var(--border);padding:8px 10px;border-radius:999px}
+    .pill input{all:unset;width:64px;text-align:center;font-weight:700;font-size:16px}
+    .pill .lab{font-size:12px;color:var(--muted)}
+
+    .hole-head{display:flex;justify-content:space-between;align-items:center}
+    .hole-num{font-size:18px;font-weight:800}
+    .hole-ctrl{display:flex;gap:8px}
+    .ghost{opacity:.75}
+
+    textarea{width:100%;min-height:72px;background:#0e141c;color:var(--ink);border:1px solid var(--border);border-radius:12px;padding:10px}
+
+    .toolbar{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(11,15,20,.2),rgba(11,15,20,.9));backdrop-filter:blur(8px);border-top:1px solid var(--border);padding:10px}
+    .tools{display:flex;gap:8px}
+    .tools .btn{flex:1}
+
+    .tiny{font-size:11px;color:var(--muted)}
+    .inline{display:inline-flex;gap:8px;align-items:center}
+    .spacer{height:80px}
+
+    .lang{font-size:12px;color:var(--muted);}
+  </style>
 </head>
 <body>
-  <header><h1>TK22 — Kodeck (라운딩 경량 기록기)</h1></header>
-  <div class="top-hint" id="par3Hint"><span class="pill">Par3 규칙 적용: 티샷은 APP(파온)</span></div>
+<header>
+  <div class="top">
+    <div class="brand">
+      <h1>kodeck — on‑course</h1>
+      <span class="tag" id="version">v1</span>
+    </div>
+    <div class="inline lang">
+      <label><input type="checkbox" id="langToggle"/> EN</label>
+      <button class="btn small" id="importBtn" title="가져오기 / Import">↥ JSON</button>
+      <button class="btn small" id="exportBtn" title="내보내기 / Export">↧ JSON/CSV</button>
+    </div>
+  </div>
+  <div class="bar" id="progressBar"></div>
+</header>
 
-  <div class="container">
-
-    <!-- 라운드/홀 -->
-    <section id="round">
-      <h2>라운드 / 홀</h2>
-      <div class="row">
-        <div>
-          <label>Hole</label>
-          <div class="seg">
-            <button id="btnHolePrev" class="ghost" style="max-width:80px">◀</button>
-            <input id="inpHole" type="number" min="1" max="18" value="1"/>
-            <button id="btnHoleNext" class="ghost" style="max-width:80px">▶</button>
-          </div>
-        </div>
-        <div>
-          <label>Par</label>
-          <div class="seg" id="segPar">
-            <button data-par="3">3</button>
-            <button data-par="4" class="active">4</button>
-            <button data-par="5">5</button>
-          </div>
+<div class="wrap">
+  <div class="card">
+    <div class="row" style="align-items:flex-end">
+      <div style="flex:1 1 160px">
+        <label class="section-title" data-t="player">선수 ID</label>
+        <input id="playerId" class="pill" placeholder="e.g. C22001"/>
+      </div>
+      <div style="flex:1 1 160px">
+        <label class="section-title" data-t="course">코스명</label>
+        <input id="courseName" class="pill" placeholder="e.g. OCN Panther"/>
+      </div>
+      <div style="flex:0 0 auto">
+        <div class="pill">
+          <span class="lab" data-t="holes">홀 수</span>
+          <input id="holeCount" type="number" min="3" max="27" value="18"/>
         </div>
       </div>
-      <div class="row" style="margin-top:6px">
-        <div>
-          <label>Sequence(샷 번호)</label>
-          <div class="seg">
-            <div class="pill" style="flex:1;text-align:center" id="lblSeq">#1</div>
-            <button id="btnResetSeq" class="ghost" style="max-width:120px">리셋</button>
-          </div>
-        </div>
-        <div>
-          <label>투온 시도 (Par5)</label>
-          <div class="seg" id="segTwoOn">
-            <button data-twoon="off" class="active">X</button>
-            <button data-twoon="on">O</button>
-          </div>
-        </div>
+      <div class="hole-ctrl">
+        <button class="btn small" id="prevHole">◀︎</button>
+        <div class="pill"><span class="lab">Hole</span><input id="holeNum" type="number" min="1" value="1"/></div>
+        <button class="btn small" id="nextHole">▶︎</button>
       </div>
-      <div class="small">* Par3에서 <b>티샷</b>을 누르면 자동으로 <b>APP(파온)</b>으로 전환됩니다. (상단 PILL 상시 표기)</div>
-    </section>
-
-    <!-- 페이즈 -->
-    <section id="phase">
-      <h2>페이즈 선택</h2>
-      <div class="seg" id="segPhase">
-        <button data-phase="tee" class="active">티샷</button>
-        <button data-phase="approach">파온(중거리)</button>
-        <button data-phase="around">30m 이내</button>
-        <button data-phase="putt">퍼팅</button>
-      </div>
-    </section>
-
-    <!-- 입력 -->
-    <section id="form">
-      <h2>입력</h2>
-
-      <!-- 거리 -->
-      <div class="row">
-        <div>
-          <label>현재 남은거리 (m)</label>
-          <input id="inpCurM" type="number" inputmode="decimal" placeholder="예: 380 (티샷은 핀까지 총거리)"/>
-        </div>
-        <div>
-          <label>다음 남은거리 (m)</label>
-          <input id="inpNextM" type="number" inputmode="decimal" placeholder="예: 150"/>
-        </div>
-      </div>
-
-      <!-- 동적 칩(phase별 자동 구성) -->
-      <div class="chips" id="chips" style="margin-top:6px"></div>
-
-      <!-- 옵션 -->
-      <div class="row" style="margin-top:6px">
-        <div>
-          <label>클럽 (선택)</label>
-          <select id="ddClub">
-            <option value="">-</option>
-            <option>Dr</option><option>3w</option><option>2i</option><option>3i</option><option>4i</option>
-            <option>5i</option><option>6i</option><option>7i</option><option>8i</option><option>9i</option>
-            <option>pw</option><option>50</option><option>52</option><option>54</option><option>56</option>
-            <option>58</option><option>60</option><option>putter</option>
-          </select>
-        </div>
-        <div>
-          <label>어프로치 타입 (30m 이내)</label>
-          <select id="ddApType">
-            <option value="">-</option>
-            <option value="basic">기본</option>
-            <option value="running">러닝</option>
-            <option value="flop">플롭</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- 벌타 -->
-      <div style="margin-top:8px">
-        <label>벌타</label>
-        <div class="row">
-          <div id="penTypeWrap">
-            <div class="seg small" id="segPenaltyType">
-              <button data-pt="none" class="active">없음</button>
-              <button data-pt="HAZ">HAZ(+1)</button>
-              <button data-pt="OB">OB(+2)</button>
-            </div>
-          </div>
-          <div id="penDirWrap">
-            <div class="seg small" id="segPenaltyDir">
-              <button data-pd="" class="active">-</button>
-              <button data-pd="L">L</button>
-              <button data-pd="R">R</button>
-              <button data-pd="Long">Long</button>
-              <button data-pd="Short">Short</button>
-            </div>
-          </div>
-        </div>
-        <div class="small" id="seqPreview" style="margin-top:6px;display:none">
-          <span class="preview" id="seqPreviewPill">다음 샷 미리보기</span>
-        </div>
-      </div>
-
-      <!-- 캔버스(조건부: APP(투온 O) / 30m 이내) -->
-      <div id="canvasWrap" style="margin-top:10px; display:none">
-        <div class="row">
-          <div>
-            <label>그린 반지름 (m) — 스케일</label>
-            <input id="inpGreenR" type="number" value="15"/>
-          </div>
-          <div>
-            <label>좌표 결과 (m, 핀 기준)</label>
-            <div class="pill mono" id="lblXY">x: 0.0 / y: 0.0 (dist 0.0)</div>
-          </div>
-        </div>
-        <div style="display:flex; align-items:center; justify-content:center; margin-top:8px">
-          <canvas id="greenCanvas" width="320" height="320"></canvas>
-        </div>
-        <div class="small" style="margin-top:4px">
-          ● 클릭/터치: 핀 기준 (x,y) 기록 — <b>그린 원=반지름 15m</b>, 외곽 연한 링=그린 주변(30m).  
-          ● <b>회색 점선 링</b>은 입력한 <b>다음 남은거리</b> 반지름 가이드입니다.
-        </div>
-        <div style="margin-top:6px">
-          <button id="btnClearDot" class="chip" style="border-radius:999px">좌표 초기화</button>
-        </div>
-      </div>
-
-      <!-- 퍼팅 전용 -->
-      <div id="puttWrap" style="margin-top:8px; display:none">
-        <div class="seg small" id="segPuttHoled">
-          <button data-holed="false" class="active">미스</button>
-          <button data-holed="true">홀인</button>
-        </div>
-        <div class="small" style="margin-top:6px">* 퍼팅은 캔버스 비활성(속도 우선). 직전 <b>다음 남은거리</b>가 자동으로 현재거리로 이어집니다.</div>
-      </div>
-    </section>
-
-    <!-- 샷 리스트 -->
-    <section id="shots">
-      <h2>샷 리스트</h2>
-      <div style="overflow:auto">
-        <table id="tblShots">
-          <thead><tr>
-            <th>Hole</th><th>Par</th><th>#</th><th>Phase</th><th>cur→next(m)</th>
-            <th>클럽</th><th>투온</th><th>벌타</th><th>좌표</th>
-          </tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
-
+    </div>
   </div>
 
-  <!-- 고정 액션 -->
-  <div class="sticky">
-    <button class="btn brand" id="btnAddShot" style="flex:2">샷 추가</button>
-    <button class="btn" id="btnEndHole" style="flex:1">홀 종료</button>
-    <button class="btn ghost" id="btnUndo" style="flex:1">되돌리기</button>
-    <button class="btn warn" id="btnExport" style="flex:1">내보내기(JSON)</button>
+  <!-- TEE BOX -->
+  <div class="card">
+    <div class="hole-head">
+      <div class="hole-num" id="holeLabel">HOLE 1</div>
+      <div class="tiny ghost" id="holeStatus">—</div>
+    </div>
+    <h2 class="section-title" data-t="tee">티샷</h2>
+    <div class="row">
+      <div class="slot" style="flex:2">
+        <h3 data-t="club">클럽</h3>
+        <div class="grid grid-5" id="clubBtns"></div>
+      </div>
+      <div class="slot" style="flex:3">
+        <h3 data-t="teeRes">결과</h3>
+        <div class="grid" id="teeResBtns"></div>
+      </div>
+    </div>
   </div>
 
-  <div class="toast" id="toast"></div>
+  <!-- APPROACH / NEXT SHOT -->
+  <div class="card">
+    <h2 class="section-title" data-t="approach">어프로치</h2>
+    <div class="row">
+      <div class="slot" style="flex:2">
+        <h3 data-t="distToPin">핀까지 거리 (yd)</h3>
+        <div class="pill"><input id="dist" inputmode="numeric" pattern="[0-9]*" placeholder="150"/><span class="lab">yd</span></div>
+      </div>
+      <div class="slot" style="flex:1.2">
+        <h3 data-t="target">목표</h3>
+        <div class="grid grid-3" id="targetBtns"></div>
+      </div>
+      <div class="slot" style="flex:1.8">
+        <h3 data-t="apRes">결과</h3>
+        <div class="grid" id="apResBtns"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GREEN / SHORT GAME -->
+  <div class="card">
+    <h2 class="section-title" data-t="green">그린 & 퍼팅</h2>
+    <div class="row">
+      <div class="slot" style="flex:2">
+        <h3 data-t="gir">GIR</h3>
+        <div class="grid grid-2">
+          <button class="btn" data-bind="gir" data-val="Y">YES</button>
+          <button class="btn" data-bind="gir" data-val="N">NO</button>
+        </div>
+      </div>
+      <div class="slot" style="flex:2">
+        <h3 data-t="firstPutt">첫 퍼트 거리 (ft)</h3>
+        <div class="pill"><input id="firstPutt" inputmode="numeric" pattern="[0-9]*" placeholder="15"/><span class="lab">ft</span></div>
+      </div>
+      <div class="slot" style="flex:2">
+        <h3 data-t="putts">퍼트 수</h3>
+        <div class="grid grid-4">
+          <button class="btn" data-bind="putts" data-val="0">0</button>
+          <button class="btn" data-bind="putts" data-val="1">1</button>
+          <button class="btn" data-bind="putts" data-val="2">2</button>
+          <button class="btn" data-bind="putts" data-val="3">3+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHORT GAME BRANCH (appears if GIR = N) -->
+  <div class="card" id="sgCard" style="display:none">
+    <h2 class="section-title" data-t="shortGame">쇼트게임</h2>
+    <div class="row">
+      <div class="slot" style="flex:2">
+        <h3 data-t="sgLie">라이</h3>
+        <div class="grid grid-3" id="sgLieBtns"></div>
+      </div>
+      <div class="slot" style="flex:2">
+        <h3 data-t="sgStrokes">그린까지 타수</h3>
+        <div class="grid grid-3">
+          <button class="btn" data-bind="sgStrokes" data-val="1">1</button>
+          <button class="btn" data-bind="sgStrokes" data-val="2">2</button>
+          <button class="btn" data-bind="sgStrokes" data-val="3">3+</button>
+        </div>
+      </div>
+      <div class="slot" style="flex:2">
+        <h3 data-t="leave">남은 거리 (ft)</h3>
+        <div class="pill"><input id="leaveFt" inputmode="numeric" pattern="[0-9]*" placeholder="4"/><span class="lab">ft</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PENALTIES / NOTES -->
+  <div class="card">
+    <h2 class="section-title" data-t="penalty">패널티 & 메모</h2>
+    <div class="row">
+      <div class="slot" style="flex:2">
+        <h3 data-t="pen">패널티</h3>
+        <div class="grid grid-3" id="penBtns"></div>
+      </div>
+      <div class="slot" style="flex:3">
+        <h3 data-t="note">메모</h3>
+        <textarea id="notes" placeholder="바람, 경사, 선택 이유 등"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+</div>
+
+<!-- BOTTOM TOOLBAR -->
+<div class="toolbar">
+  <div class="tools">
+    <button class="btn" id="undoBtn">↶ 되돌리기</button>
+    <button class="btn" id="clearBtn">홀 초기화</button>
+    <button class="btn ok" id="saveBtn">저장 & 다음 홀 ▶︎</button>
+  </div>
+</div>
 
 <script>
 (function(){
-  // ===== Utils =====
-  const $ = s=>document.querySelector(s), $$ = s=>Array.from(document.querySelectorAll(s));
-  const clamp = (x,min,max)=>Math.max(min,Math.min(max,x));
-  const toast = (msg)=>{ const t=$('#toast'); t.textContent=msg; t.classList.add('show');
-    clearTimeout(toast._id); toast._id=setTimeout(()=>t.classList.remove('show'), 1600); };
+  const $ = (sel)=>document.querySelector(sel);
+  const $$ = (sel)=>Array.from(document.querySelectorAll(sel));
+  const L = (k)=> i18n[state.lang][k] || k;
 
-  // ===== State =====
-  const nowId = ()=>`R-${Date.now()}-${Math.floor(Math.random()*1000)}`;
-  let round = JSON.parse(localStorage.getItem('kodeck_round')||'null');
-  if(!round){ round = { roundId: nowId(), date: new Date().toISOString(), parMap:{}, shots:[] }; }
-  let hole=1, par=4, seq=1, phase='tee', twoOnTry=false;
-  let penaltyType='none', penaltyDir='';
-  let lastPoint=null;
+  const i18n = {
+    ko:{
+      player:'선수 ID', course:'코스명', holes:'홀 수', tee:'티샷', club:'클럽', teeRes:'결과',
+      approach:'어프로치', distToPin:'핀까지 거리 (yd)', target:'목표', apRes:'결과',
+      green:'그린 & 퍼팅', gir:'GIR', firstPutt:'첫 퍼트 거리 (ft)', putts:'퍼트 수',
+      shortGame:'쇼트게임', sgLie:'라이', sgStrokes:'그린까지 타수', leave:'남은 거리 (ft)',
+      penalty:'패널티 & 메모', pen:'패널티', note:'메모'
+    },
+    en:{
+      player:'Player ID', course:'Course', holes:'Holes', tee:'Tee Shot', club:'Club', teeRes:'Result',
+      approach:'Approach', distToPin:'Dist to Pin (yd)', target:'Target', apRes:'Result',
+      green:'Green & Putting', gir:'GIR', firstPutt:'First Putt (ft)', putts:'Putts',
+      shortGame:'Short Game', sgLie:'Lie', sgStrokes:'Strokes to Green', leave:'Leave (ft)',
+      penalty:'Penalties & Notes', pen:'Penalty', note:'Notes'
+    }
+  };
 
-  // ===== Elements =====
-  const inpHole = $('#inpHole'), lblSeq = $('#lblSeq');
-  const segPar = $('#segPar'), segPhase = $('#segPhase'), segTwoOn=$('#segTwoOn');
-  const inpCurM = $('#inpCurM'), inpNextM = $('#inpNextM'), ddClub=$('#ddClub'), ddApType=$('#ddApType');
-  const segPenaltyType = $('#segPenaltyType'), segPenaltyDir = $('#segPenaltyDir');
-  const penDirWrap = $('#penDirWrap');
-  const canvasWrap = $('#canvasWrap'), greenCanvas = $('#greenCanvas'), lblXY = $('#lblXY'), inpGreenR = $('#inpGreenR');
-  const puttWrap = $('#puttWrap'), par3Hint = $('#par3Hint');
-  const chipsBox = $('#chips'), seqPreview = $('#seqPreview'), seqPreviewPill = $('#seqPreviewPill');
+  const clubs = ['D','3W','5W','UT','4I','5I','6I','7I','8I','9I','PW','GW','SW','LW'];
+  const teeResults = [
+    {k:'FW', lab:'페어웨이'},
+    {k:'R',  lab:'러프'},
+    {k:'B',  lab:'벙커'},
+    {k:'T',  lab:'나무/정글'},
+    {k:'O',  lab:'OB'},
+    {k:'H',  lab:'해저드'}
+  ];
+  const targets = [
+    {k:'safeL',lab:'세이프 L'},
+    {k:'pin',  lab:'핀'},
+    {k:'safeR',lab:'세이프 R'}
+  ];
+  const apResults = [
+    {k:'G', lab:'온그린'},
+    {k:'L', lab:'좌 미스'},
+    {k:'R', lab:'우 미스'},
+    {k:'S', lab:'짧음'},
+    {k:'LNG',lab:'긺'},
+  ];
+  const sgLies = [
+    {k:'FW',lab:'페어웨이'},
+    {k:'RF',lab:'러프'},
+    {k:'BK',lab:'벙커'},
+  ];
+  const pens = [
+    {k:'OB',lab:'OB +1'},
+    {k:'HZ',lab:'해저드 +1'},
+    {k:'UP',lab:'언플 +1'}
+  ];
 
-  // ===== Local Save =====
-  function saveLocal(){ localStorage.setItem('kodeck_round', JSON.stringify(round)); }
+  let state = {
+    lang:'ko',
+    hole:1,
+    holeCount:18,
+    stack:[], // for undo
+  };
 
-  // ===== Hole / Par =====
-  function applySeq(v){ seq=v; lblSeq.textContent = '#'+seq; updatePreview(); }
-  function applyPar(p){
-    par = p; $$('#segPar button').forEach(b=>b.classList.toggle('active', Number(b.dataset.par)===par));
-    // 투온 스위치 시각
-    $('#segTwoOn').style.opacity = (par===5?1:0.5);
-    if(par!==5) applyTwoOn(false);
-    updatePar3Hint();
+  // Initialize dynamic buttons
+  function makeButtons(list, mountSel, bindKey){
+    const host = typeof mountSel==='string'? $(mountSel): mountSel;
+    host.innerHTML = '';
+    list.forEach(item=>{
+      const b=document.createElement('button');
+      b.className='btn';
+      b.textContent=item.lab||item;
+      b.dataset.val=item.k||item;
+      if(bindKey) b.dataset.bind=bindKey;
+      b.addEventListener('click',()=>toggleBtn(b, bindKey));
+      host.appendChild(b);
+    });
   }
-  function setHole(h){
-    hole = clamp(h,1,18); inpHole.value=hole; applySeq(1);
-    if(round.parMap[hole]==null){ round.parMap[hole]=par; saveLocal(); }
-    applyPar(round.parMap[hole]||par);
-    toast(`Hole ${hole} · Par ${par}${par===5?` · 투온 ${twoOnTry?'O':'X'}`:''}`);
-  }
-  inpHole.addEventListener('change', ()=> setHole(Number(inpHole.value||1)));
-  $('#btnHolePrev').addEventListener('click', ()=> setHole(hole-1));
-  $('#btnHoleNext').addEventListener('click', ()=> setHole(hole+1));
-  $('#btnResetSeq').addEventListener('click', ()=>{ applySeq(1); toast('시퀀스 리셋'); });
+  makeButtons(clubs, '#clubBtns', 'club');
+  makeButtons(teeResults, '#teeResBtns', 'tee');
+  makeButtons(targets, '#targetBtns', 'target');
+  makeButtons(apResults, '#apResBtns', 'ap');
+  makeButtons(sgLies, '#sgLieBtns', 'sgLie');
+  makeButtons(pens, '#penBtns', 'pen');
 
-  segPar.addEventListener('click', (e)=>{
-    const btn=e.target.closest('button'); if(!btn) return;
-    const p = Number(btn.dataset.par); applyPar(p); round.parMap[hole]=par; saveLocal(); applyPhase(phase);
+  function toggleBtn(btn, key){
+    // single-select per group except penalties (multi)
+    const multi = key==='pen';
+    const group = $$(`[data-bind="${key}"]`);
+    if(!multi){ group.forEach(x=>x.removeAttribute('aria-pressed')); }
+    const pressed = btn.getAttribute('aria-pressed')==='true';
+    btn.setAttribute('aria-pressed', (!pressed).toString());
+    if(!multi){
+      // store immediately
+      setField(key, (!pressed)? btn.dataset.val: null);
+    } else {
+      // toggle presence in penalties
+      const cur = getHole().penalties || [];
+      const val = btn.dataset.val;
+      const i = cur.indexOf(val);
+      if(i>-1){ cur.splice(i,1);} else {cur.push(val);}
+      setField('penalties', cur);
+    }
+    refreshStatus();
+  }
+
+  // Storage helpers
+  const KEY = 'kodeck_round_v1';
+  function load(){
+    const raw=localStorage.getItem(KEY);
+    return raw? JSON.parse(raw): {
+      meta:{ playerId:'', course:'', date:new Date().toISOString().slice(0,10) },
+      holes:{} // id -> partials
+    };
+  }
+  function save(obj){ localStorage.setItem(KEY, JSON.stringify(obj)); }
+  function getRound(){ return load(); }
+  function getHole(n=state.hole){ const r=getRound(); return r.holes[n]||(r.holes[n]={}); }
+  function setHole(n, data){ const r=getRound(); r.holes[n]=Object.assign({}, r.holes[n]||{}, data); save(r); }
+  function setField(key, val){ const h=getHole(); if(val===null){ delete h[key]; } else { h[key]=val; } setHole(state.hole,h); }
+
+  // UI bindings
+  function syncMeta(){
+    const r=getRound();
+    $('#playerId').value=r.meta.playerId||'';
+    $('#courseName').value=r.meta.course||'';
+    $('#holeCount').value=state.holeCount;
+  }
+  function writeMeta(){
+    const r=getRound();
+    r.meta.playerId=$('#playerId').value.trim();
+    r.meta.course=$('#courseName').value.trim();
+    r.meta.date=r.meta.date||new Date().toISOString().slice(0,10);
+    save(r);
+  }
+
+  function go(n){
+    writeMeta();
+    const max = parseInt($('#holeCount').value||'18',10);
+    state.holeCount = Math.max(3, Math.min(27, max));
+    state.hole = Math.max(1, Math.min(state.holeCount, n));
+    $('#holeNum').value = state.hole;
+    $('#holeLabel').textContent = `HOLE ${state.hole}`;
+    renderHole();
+    renderDots();
+  }
+
+  function renderDots(){
+    const host = $('#progressBar');
+    host.innerHTML='';
+    const r = getRound();
+    for(let i=1;i<=state.holeCount;i++){
+      const d = r.holes[i];
+      const el=document.createElement('div');
+      el.className='dot';
+      if(d){
+        const cls = d.putts!=null? 'ok' : (d.penalties&&d.penalties.length? 'bad':'warn');
+        el.classList.add(cls);
+      }
+      host.appendChild(el);
+    }
+  }
+
+  function renderHole(){
+    // clear actives
+    $$('[aria-pressed]').forEach(x=>x.removeAttribute('aria-pressed'));
+    const h = getHole();
+    // set actives from state
+    ['club','tee','target','ap','gir','putts','sgStrokes','sgLie'].forEach(k=>{
+      if(h[k]!=null){ const b = $(`[data-bind="${k}"][data-val="${h[k]}"]`); if(b) b.setAttribute('aria-pressed','true'); }
+    });
+    if(h.penalties){ h.penalties.forEach(p=>{ const b=$(`[data-bind="pen"][data-val="${p}"]`); if(b) b && b.setAttribute('aria-pressed','true');}); }
+    $('#dist').value = h.dist||'';
+    $('#firstPutt').value = h.firstPutt||'';
+    $('#leaveFt').value = h.leaveFt||'';
+    $('#notes').value = h.notes||'';
+    $('#sgCard').style.display = h.gir==='N'? 'block':'none';
+    refreshStatus();
+  }
+
+  function refreshStatus(){
+    const h = getHole();
+    const parts = [];
+    if(h.club) parts.push(`Tee:${h.club}`);
+    if(h.tee) parts.push(h.tee);
+    if(h.ap) parts.push(h.ap);
+    if(h.gir) parts.push(`GIR:${h.gir}`);
+    if(h.putts!=null) parts.push(`${h.putts}P`);
+    if(h.penalties&&h.penalties.length) parts.push('PEN');
+    $('#holeStatus').textContent = parts.join(' · ') || '—';
+  }
+
+  // inputs
+  $('#dist').addEventListener('change', e=>setField('dist', num(e.target.value)));
+  $('#firstPutt').addEventListener('change', e=>setField('firstPutt', num(e.target.value)));
+  $('#leaveFt').addEventListener('change', e=>setField('leaveFt', num(e.target.value)));
+  $('#notes').addEventListener('change', e=>setField('notes', e.target.value));
+
+  $('#holeNum').addEventListener('change', e=>go(parseInt(e.target.value||'1',10)));
+  $('#prevHole').addEventListener('click', ()=>go(state.hole-1));
+  $('#nextHole').addEventListener('click', ()=>go(state.hole+1));
+  $('#holeCount').addEventListener('change', ()=>{ renderDots(); go(state.hole); });
+
+  // bind generic buttons by delegation
+  document.body.addEventListener('click', (e)=>{
+    const t=e.target.closest('[data-bind]');
+    if(!t) return;
+    const key=t.dataset.bind;
+    const val=t.dataset.val;
+    if(key==='gir'){
+      setField('gir', val);
+      $('#sgCard').style.display = val==='N'? 'block':'none';
+    } else if(key==='putts'){
+      setField('putts', parseInt(val,10));
+    } else if(key==='sgStrokes'){
+      setField('sgStrokes', parseInt(val,10));
+    } else if(key==='club' || key==='tee' || key==='target' || key==='ap' || key==='sgLie'){
+      setField(key, val);
+    }
+    refreshStatus();
   });
 
-  // ===== Phase / Two-on =====
-  function updatePa
+  // actions
+  $('#undoBtn').addEventListener('click', ()=>{
+    const r=getRound();
+    const h=r.holes[state.hole]||{};
+    state.stack.push(JSON.stringify(h));
+    // heuristic undo: remove last set field based on priority
+    const order=['notes','penalties','putts','firstPutt','leaveFt','sgStrokes','sgLie','gir','ap','target','dist','tee','club'];
+    for(const k of order){ if(h[k]!=null){ delete h[k]; break; } }
+    setHole(state.hole,h); renderHole();
+  });
+  $('#clearBtn').addEventListener('click', ()=>{ setHole(state.hole, {}); renderHole(); });
+  $('#saveBtn').addEventListener('click', ()=>{ writeMeta(); go(state.hole+1); });
+
+  // import / export
+  $('#exportBtn').addEventListener('click', ()=>{
+    const r = getRound();
+    const payload = toBridgeJSON(r);
+    const csv = toCSV(payload);
+    const blobJson = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+    const blobCsv = new Blob([csv], {type:'text/csv'});
+    download(blobJson, `kodeck_${r.meta.playerId||'player'}_${r.meta.date}.json`);
+    setTimeout(()=>download(blobCsv, `kodeck_${r.meta.playerId||'player'}_${r.meta.date}.csv`), 250);
+  });
+  $('#importBtn').addEventListener('click', ()=>{
+    const inp=document.createElement('input');
+    inp.type='file'; inp.accept='.json';
+    inp.onchange=(e)=>{
+      const f=e.target.files[0];
+      const rd=new FileReader();
+      rd.onload=()=>{
+        try{ const data=JSON.parse(rd.result); fromBridgeJSON(data); renderDots(); renderHole(); }
+        catch(err){ alert('JSON 파싱 오류'); }
+      };
+      rd.readAsText(f);
+    };
+    inp.click();
+  });
+
+  // language toggle
+  $('#langToggle').addEventListener('change', (e)=>{
+    state.lang = e.target.checked? 'en':'ko';
+    $$('[data-t]').forEach(el=>{ const k=el.getAttribute('data-t'); el.textContent=L(k); });
+  });
+
+  // helpers
+  function num(v){ const n=parseInt(v,10); return isFinite(n)? n: '' }
+  function download(blob, filename){
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // Export schema (BRIDGE → compatible, minimal fields for later full SG in Korsekode)
+  function toBridgeJSON(r){
+    const holes=[];
+    for(let i=1;i<= (r.meta.holeCount||state.holeCount); i++){
+      const h=r.holes[i]||{};
+      holes.push({
+        hole:i,
+        par:null,             // optional later fill
+        tee:{ club:h.club||null, result:h.tee||null },
+        approach:{ dist_yd: h.dist||null, target:h.target||null, result:h.ap||null },
+        green:{ gir: h.gir||null, first_putt_ft: h.firstPutt||null, putts: (h.putts!=null? h.putts: null) },
+        short_game: h.gir==='N'? { lie:h.sgLie||null, strokes_to_green:h.sgStrokes||null, leave_ft:h.leaveFt||null } : null,
+        penalties: h.penalties||[],
+        notes: h.notes||''
+      });
+    }
+    return {
+      meta:{ player_id:r.meta.playerId, course:r.meta.course, date:r.meta.date, holes: r.meta.holeCount||state.holeCount },
+      holes
+    };
+  }
+
+  function toCSV(payload){
+    const header=['player_id','course','date','hole','tee_club','tee_res','ap_dist_yd','ap_target','ap_res','gir','sg_lie','sg_strokes','sg_leave_ft','first_putt_ft','putts','penalties','notes'];
+    const L=[]; L.push(header.join(','));
+    payload.holes.forEach(h=>{
+      L.push([
+        payload.meta.player_id,
+        payload.meta.course,
+        payload.meta.date,
+        h.hole,
+        val(h.tee?.club),
+        val(h.tee?.result),
+        val(h.approach?.dist_yd),
+        val(h.approach?.target),
+        val(h.approach?.result),
+        val(h.green?.gir),
+        val(h.short_game?.lie),
+        val(h.short_game?.strokes_to_green),
+        val(h.short_game?.leave_ft),
+        val(h.green?.first_putt_ft),
+        val(h.green?.putts),
+        (h.penalties||[]).join('|'),
+        '"'+(h.notes||'').replaceAll('"','\"')+'"'
+      ].join(','));
+    });
+    return L.join('\n');
+    function val(x){ return (x==null? '': x); }
+  }
+
+  function fromBridgeJSON(payload){
+    const r = {meta:{ playerId: payload.meta.player_id||'', course: payload.meta.course||'', date: payload.meta.date||new Date().toISOString().slice(0,10), holeCount: payload.meta.holes||18 }, holes:{} };
+    payload.holes.forEach(h=>{
+      r.holes[h.hole] = {
+        club: h.tee?.club||null,
+        tee: h.tee?.result||null,
+        dist: h.approach?.dist_yd||null,
+        target: h.approach?.target||null,
+        ap: h.approach?.result||null,
+        gir: h.green?.gir||null,
+        firstPutt: h.green?.first_putt_ft||null,
+        putts: h.green?.putts?? null,
+        sgLie: h.short_game?.lie||null,
+        sgStrokes: h.short_game?.strokes_to_green||null,
+        leaveFt: h.short_game?.leave_ft||null,
+        penalties: h.penalties||[],
+        notes: h.notes||''
+      };
+    });
+    save(r);
+    state.holeCount = r.meta.holeCount||18;
+    $('#holeCount').value = state.holeCount;
+  }
+
+  // kick
+  syncMeta();
+  renderDots();
+  renderHole();
+})();
+</script>
+</body>
+</html>
