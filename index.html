@@ -1,245 +1,3 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Kodeck — On‑Course Quick Log (v1)</title>
-  <style>
-    :root{
-      --bg:#0b0f14;      /* deep navy for glare control */
-      --ink:#e8ecf1;     /* high-contrast text */
-      --muted:#9aa5b1;   
-      --accent:#58a6ff;  /* focus ring */
-      --ok:#10b981;      /* GIR / success */
-      --warn:#f59e0b;    /* miss */
-      --bad:#ef4444;     /* penalty */
-      --card:#11161d;    /* panels */
-      --chip:#1a212b;    /* chip bg */
-      --border:#202a36;
-      --btn:#1f2937;     /* buttons */
-      --btnActive:#334155;
-      --radius:18px;
-      --shadow:0 10px 24px rgba(0,0,0,.35);
-      --tap:20px; /* big hit area */
-    }
-
-    html,body{height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Pretendard,Apple SD Gothic Neo,Noto Sans,Arial,sans-serif;}
-    *{box-sizing:border-box}
-    button{appearance:none;border:0;cursor:pointer}
-
-    .wrap{max-width:820px;margin:0 auto;padding:16px 16px 120px}
-    header{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,rgba(11,15,20,.95),rgba(11,15,20,.75));backdrop-filter:blur(6px);border-bottom:1px solid var(--border)}
-    .top{
-      display:flex;gap:8px;align-items:center;justify-content:space-between;padding:10px 8px
-    }
-    .brand{display:flex;align-items:center;gap:10px}
-    .brand h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.3px}
-    .tag{font-size:12px;color:var(--muted)}
-
-    .bar{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;padding:8px}
-    .dot{height:16px;border-radius:8px;background:var(--chip);border:1px solid var(--border)}
-    .dot.ok{background:linear-gradient(180deg,#065f46,#10b981)}
-    .dot.warn{background:linear-gradient(180deg,#7c2d12,#f59e0b)}
-    .dot.bad{background:linear-gradient(180deg,#7f1d1d,#ef4444)}
-
-    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;margin-top:12px}
-    .section-title{font-size:13px;color:var(--muted);letter-spacing:.3px;margin:0 0 8px 2px}
-
-    .row{display:flex;flex-wrap:wrap;gap:8px}
-    .row > *{flex:1 1 auto}
-
-    .slot{background:var(--chip);border:1px solid var(--border);border-radius:14px;padding:10px}
-    .slot h3{font-size:13px;color:var(--muted);margin:0 0 6px}
-
-    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-    .grid-5{grid-template-columns:repeat(5,1fr)}
-    .grid-3{grid-template-columns:repeat(3,1fr)}
-    .grid-2{grid-template-columns:repeat(2,1fr)}
-
-    .btn{background:var(--btn);border:1px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;font-weight:700;font-size:16px;line-height:1;min-height:54px}
-    .btn.small{padding:10px;font-size:14px;min-height:44px}
-    .btn:active{transform:translateY(1px)}
-    .btn[aria-pressed="true"], .btn.active{background:var(--btnActive);outline:2px solid var(--accent)}
-    .btn.ok{background:#064e3b;border-color:#065f46}
-
-    .pill{display:inline-flex;align-items:center;gap:8px;background:var(--chip);border:1px solid var(--border);padding:8px 10px;border-radius:999px}
-    .pill input{all:unset;width:64px;text-align:center;font-weight:700;font-size:16px}
-    .pill .lab{font-size:12px;color:var(--muted)}
-
-    .hole-head{display:flex;justify-content:space-between;align-items:center}
-    .hole-num{font-size:18px;font-weight:800}
-    .hole-ctrl{display:flex;gap:8px}
-    .ghost{opacity:.75}
-
-    textarea{width:100%;min-height:72px;background:#0e141c;color:var(--ink);border:1px solid var(--border);border-radius:12px;padding:10px}
-
-    .toolbar{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(11,15,20,.2),rgba(11,15,20,.9));backdrop-filter:blur(8px);border-top:1px solid var(--border);padding:10px}
-    .tools{display:flex;gap:8px}
-    .tools .btn{flex:1}
-
-    .tiny{font-size:11px;color:var(--muted)}
-    .inline{display:inline-flex;gap:8px;align-items:center}
-    .spacer{height:80px}
-
-    .lang{font-size:12px;color:var(--muted);}
-  </style>
-</head>
-<body>
-<header>
-  <div class="top">
-    <div class="brand">
-      <h1>kodeck — on‑course</h1>
-      <span class="tag" id="version">v1</span>
-    </div>
-    <div class="inline lang">
-      <label><input type="checkbox" id="langToggle"/> EN</label>
-      <button class="btn small" id="importBtn" title="가져오기 / Import">↥ JSON</button>
-      <button class="btn small" id="exportBtn" title="내보내기 / Export">↧ JSON/CSV</button>
-    </div>
-  </div>
-  <div class="bar" id="progressBar"></div>
-</header>
-
-<div class="wrap">
-  <div class="card">
-    <div class="row" style="align-items:flex-end">
-      <div style="flex:1 1 160px">
-        <label class="section-title" data-t="player">선수 ID</label>
-        <input id="playerId" class="pill" placeholder="e.g. C22001"/>
-      </div>
-      <div style="flex:1 1 160px">
-        <label class="section-title" data-t="course">코스명</label>
-        <input id="courseName" class="pill" placeholder="e.g. OCN Panther"/>
-      </div>
-      <div style="flex:0 0 auto">
-        <div class="pill">
-          <span class="lab" data-t="holes">홀 수</span>
-          <input id="holeCount" type="number" min="3" max="27" value="18"/>
-        </div>
-      </div>
-      <div class="hole-ctrl">
-        <button class="btn small" id="prevHole">◀︎</button>
-        <div class="pill"><span class="lab">Hole</span><input id="holeNum" type="number" min="1" value="1"/></div>
-        <button class="btn small" id="nextHole">▶︎</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- TEE BOX -->
-  <div class="card">
-    <div class="hole-head">
-      <div class="hole-num" id="holeLabel">HOLE 1</div>
-      <div class="tiny ghost" id="holeStatus">—</div>
-    </div>
-    <h2 class="section-title" data-t="tee">티샷</h2>
-    <div class="row">
-      <div class="slot" style="flex:2">
-        <h3 data-t="club">클럽</h3>
-        <div class="grid grid-5" id="clubBtns"></div>
-      </div>
-      <div class="slot" style="flex:3">
-        <h3 data-t="teeRes">결과</h3>
-        <div class="grid" id="teeResBtns"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- APPROACH / NEXT SHOT -->
-  <div class="card">
-    <h2 class="section-title" data-t="approach">어프로치</h2>
-    <div class="row">
-      <div class="slot" style="flex:2">
-        <h3 data-t="distToPin">핀까지 거리 (yd)</h3>
-        <div class="pill"><input id="dist" inputmode="numeric" pattern="[0-9]*" placeholder="150"/><span class="lab">yd</span></div>
-      </div>
-      <div class="slot" style="flex:1.2">
-        <h3 data-t="target">목표</h3>
-        <div class="grid grid-3" id="targetBtns"></div>
-      </div>
-      <div class="slot" style="flex:1.8">
-        <h3 data-t="apRes">결과</h3>
-        <div class="grid" id="apResBtns"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- GREEN / SHORT GAME -->
-  <div class="card">
-    <h2 class="section-title" data-t="green">그린 & 퍼팅</h2>
-    <div class="row">
-      <div class="slot" style="flex:2">
-        <h3 data-t="gir">GIR</h3>
-        <div class="grid grid-2">
-          <button class="btn" data-bind="gir" data-val="Y">YES</button>
-          <button class="btn" data-bind="gir" data-val="N">NO</button>
-        </div>
-      </div>
-      <div class="slot" style="flex:2">
-        <h3 data-t="firstPutt">첫 퍼트 거리 (ft)</h3>
-        <div class="pill"><input id="firstPutt" inputmode="numeric" pattern="[0-9]*" placeholder="15"/><span class="lab">ft</span></div>
-      </div>
-      <div class="slot" style="flex:2">
-        <h3 data-t="putts">퍼트 수</h3>
-        <div class="grid grid-4">
-          <button class="btn" data-bind="putts" data-val="0">0</button>
-          <button class="btn" data-bind="putts" data-val="1">1</button>
-          <button class="btn" data-bind="putts" data-val="2">2</button>
-          <button class="btn" data-bind="putts" data-val="3">3+</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SHORT GAME BRANCH (appears if GIR = N) -->
-  <div class="card" id="sgCard" style="display:none">
-    <h2 class="section-title" data-t="shortGame">쇼트게임</h2>
-    <div class="row">
-      <div class="slot" style="flex:2">
-        <h3 data-t="sgLie">라이</h3>
-        <div class="grid grid-3" id="sgLieBtns"></div>
-      </div>
-      <div class="slot" style="flex:2">
-        <h3 data-t="sgStrokes">그린까지 타수</h3>
-        <div class="grid grid-3">
-          <button class="btn" data-bind="sgStrokes" data-val="1">1</button>
-          <button class="btn" data-bind="sgStrokes" data-val="2">2</button>
-          <button class="btn" data-bind="sgStrokes" data-val="3">3+</button>
-        </div>
-      </div>
-      <div class="slot" style="flex:2">
-        <h3 data-t="leave">남은 거리 (ft)</h3>
-        <div class="pill"><input id="leaveFt" inputmode="numeric" pattern="[0-9]*" placeholder="4"/><span class="lab">ft</span></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- PENALTIES / NOTES -->
-  <div class="card">
-    <h2 class="section-title" data-t="penalty">패널티 & 메모</h2>
-    <div class="row">
-      <div class="slot" style="flex:2">
-        <h3 data-t="pen">패널티</h3>
-        <div class="grid grid-3" id="penBtns"></div>
-      </div>
-      <div class="slot" style="flex:3">
-        <h3 data-t="note">메모</h3>
-        <textarea id="notes" placeholder="바람, 경사, 선택 이유 등"></textarea>
-      </div>
-    </div>
-  </div>
-
-  <div class="spacer"></div>
-</div>
-
-<!-- BOTTOM TOOLBAR -->
-<div class="toolbar">
-  <div class="tools">
-    <button class="btn" id="undoBtn">↶ 되돌리기</button>
-    <button class="btn" id="clearBtn">홀 초기화</button>
-    <button class="btn ok" id="saveBtn">저장 & 다음 홀 ▶︎</button>
-  </div>
-</div>
-
 <script>
 (function(){
   const $ = (sel)=>document.querySelector(sel);
@@ -299,7 +57,7 @@
     lang:'ko',
     hole:1,
     holeCount:18,
-    stack:[], // for undo
+    stack:[], // for last-field removal
   };
 
   // Initialize dynamic buttons
@@ -331,7 +89,6 @@
     const pressed = btn.getAttribute('aria-pressed')==='true';
     btn.setAttribute('aria-pressed', (!pressed).toString());
     if(!multi){
-      // store immediately
       setField(key, (!pressed)? btn.dataset.val: null);
     } else {
       // toggle presence in penalties
@@ -349,7 +106,7 @@
   function load(){
     const raw=localStorage.getItem(KEY);
     return raw? JSON.parse(raw): {
-      meta:{ playerId:'', course:'', date:new Date().toISOString().slice(0,10) },
+      meta:{ playerId:'', course:'', date:new Date().toISOString().slice(0,10), holeCount:18 },
       holes:{} // id -> partials
     };
   }
@@ -364,13 +121,17 @@
     const r=getRound();
     $('#playerId').value=r.meta.playerId||'';
     $('#courseName').value=r.meta.course||'';
-    $('#holeCount').value=state.holeCount;
+    $('#holeCount').value=r.meta.holeCount||state.holeCount;
+    state.holeCount = parseInt($('#holeCount').value||'18',10);
+    // progress bar col count 반영
+    $('#progressBar').style.gridTemplateColumns = `repeat(${state.holeCount},1fr)`;
   }
   function writeMeta(){
     const r=getRound();
     r.meta.playerId=$('#playerId').value.trim();
     r.meta.course=$('#courseName').value.trim();
     r.meta.date=r.meta.date||new Date().toISOString().slice(0,10);
+    r.meta.holeCount=parseInt($('#holeCount').value||'18',10); // ✅ 저장
     save(r);
   }
 
@@ -385,17 +146,23 @@
     renderDots();
   }
 
+  function isHoleComplete(h){
+    const teeOk = !!(h.club && h.tee);
+    const apOk  = !!(h.ap || h.target || h.dist!=null);
+    const puttOk= (h.gir==='Y' && h.putts!=null) || (h.gir==='N' && h.sgLie && h.sgStrokes!=null && h.putts!=null);
+    return teeOk && apOk && puttOk;
+  }
+
   function renderDots(){
     const host = $('#progressBar');
     host.innerHTML='';
     const r = getRound();
     for(let i=1;i<=state.holeCount;i++){
-      const d = r.holes[i];
+      const d = r.holes[i]||{};
       const el=document.createElement('div');
       el.className='dot';
-      if(d){
-        const cls = d.putts!=null? 'ok' : (d.penalties&&d.penalties.length? 'bad':'warn');
-        el.classList.add(cls);
+      if(Object.keys(d).length){
+        el.classList.add(isHoleComplete(d) ? 'ok' : (d.penalties?.length ? 'bad' : 'warn'));
       }
       host.appendChild(el);
     }
@@ -436,10 +203,29 @@
   $('#leaveFt').addEventListener('change', e=>setField('leaveFt', num(e.target.value)));
   $('#notes').addEventListener('change', e=>setField('notes', e.target.value));
 
+  // Enter 이동 & 전체 선택
+  ['#dist','#firstPutt','#leaveFt'].forEach(sel=>{
+    const el=$(sel);
+    el.addEventListener('focus', ()=>{ el.select(); });
+    el.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter'){
+        e.preventDefault();
+        if(sel==='#dist') $('#firstPutt').focus();
+        else if(sel==='#firstPutt') $('#leaveFt').focus();
+        else $('#saveBtn').click();
+      }
+    });
+  });
+
   $('#holeNum').addEventListener('change', e=>go(parseInt(e.target.value||'1',10)));
   $('#prevHole').addEventListener('click', ()=>go(state.hole-1));
   $('#nextHole').addEventListener('click', ()=>go(state.hole+1));
-  $('#holeCount').addEventListener('change', ()=>{ renderDots(); go(state.hole); });
+  $('#holeCount').addEventListener('change', ()=>{
+    const v=parseInt($('#holeCount').value||'18',10);
+    state.holeCount=Math.max(3,Math.min(27,v));
+    $('#progressBar').style.gridTemplateColumns = `repeat(${state.holeCount},1fr)`;
+    renderDots(); go(state.hole);
+  });
 
   // bind generic buttons by delegation
   document.body.addEventListener('click', (e)=>{
@@ -447,6 +233,12 @@
     if(!t) return;
     const key=t.dataset.bind;
     const val=t.dataset.val;
+
+    if(key==='ap'){
+      setField('ap', val);
+      if(val!=='G'){ setField('gir','N'); $('#sgCard').style.display='block'; }
+      refreshStatus(); return;
+    }
     if(key==='gir'){
       setField('gir', val);
       $('#sgCard').style.display = val==='N'? 'block':'none';
@@ -454,7 +246,7 @@
       setField('putts', parseInt(val,10));
     } else if(key==='sgStrokes'){
       setField('sgStrokes', parseInt(val,10));
-    } else if(key==='club' || key==='tee' || key==='target' || key==='ap' || key==='sgLie'){
+    } else if(key==='club' || key==='tee' || key==='target' || key==='sgLie'){
       setField(key, val);
     }
     refreshStatus();
@@ -465,17 +257,28 @@
     const r=getRound();
     const h=r.holes[state.hole]||{};
     state.stack.push(JSON.stringify(h));
-    // heuristic undo: remove last set field based on priority
+    // heuristic last-field removal
     const order=['notes','penalties','putts','firstPutt','leaveFt','sgStrokes','sgLie','gir','ap','target','dist','tee','club'];
     for(const k of order){ if(h[k]!=null){ delete h[k]; break; } }
     setHole(state.hole,h); renderHole();
   });
   $('#clearBtn').addEventListener('click', ()=>{ setHole(state.hole, {}); renderHole(); });
-  $('#saveBtn').addEventListener('click', ()=>{ writeMeta(); go(state.hole+1); });
+
+  // === Quick Summary flow ===
+  $('#saveBtn').addEventListener('click', ()=>{
+    writeMeta();
+    const r=getRound();
+    if(!r.meta.playerId){ alert('선수 ID를 입력해 주세요.'); $('#playerId').focus(); return; }
+    // 요약 표시(현재 홀)
+    showSummary(state.hole);
+  });
 
   // import / export
   $('#exportBtn').addEventListener('click', ()=>{
+    writeMeta();
     const r = getRound();
+    if(!r.meta.playerId){ alert('선수 ID가 없습니다.'); $('#playerId').focus(); return; }
+    if(Object.keys(r.holes).length===0){ alert('기록된 홀이 없습니다.'); return; }
     const payload = toBridgeJSON(r);
     const csv = toCSV(payload);
     const blobJson = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
@@ -498,6 +301,16 @@
     inp.click();
   });
 
+  // 새 라운드
+  $('#newRoundBtn').addEventListener('click', ()=>{
+    const today = new Date().toISOString().slice(0,10);
+    const holeCount = parseInt($('#holeCount').value||'18',10);
+    save({ meta:{ playerId:'', course:'', date:today, holeCount }, holes:{} });
+    state.hole=1; state.holeCount=holeCount;
+    syncMeta(); renderDots(); renderHole();
+    $('#playerId').focus();
+  });
+
   // language toggle
   $('#langToggle').addEventListener('change', (e)=>{
     state.lang = e.target.checked? 'en':'ko';
@@ -512,10 +325,69 @@
     URL.revokeObjectURL(a.href);
   }
 
+  // === Summary Modal helpers ===
+  function showSummary(holeNo){
+    const r=getRound();
+    const h=r.holes[holeNo]||{};
+    // 진행도 표시를 위해 즉시 반영
+    renderDots();
+
+    // 제목/메타
+    $('#summaryTitle').textContent = `Hole ${holeNo} Summary`;
+    $('#summaryMeta').textContent = `${r.meta.playerId||''} · ${r.meta.course||''} · ${r.meta.date||''}`;
+
+    // 사람이 읽는 요약
+    const rows = [
+      ['Tee', `${h.club||'-'} / ${h.tee||'-'}`],
+      ['Approach', `${(h.dist??'-')}yd / ${h.target||'-'} / ${h.ap||'-'}`],
+      ['GIR', h.gir||'-'],
+      ['Short Game', h.gir==='N' ? `${h.sgLie||'-'} / ${h.sgStrokes??'-'} / leave ${h.leaveFt??'-'}ft` : '—'],
+      ['Putts', (h.putts!=null? h.putts : '-')],
+      ['Penalties', (h.penalties&&h.penalties.length? h.penalties.join('|') : '-')],
+      ['Notes', (h.notes||'-')]
+    ];
+    const grid = $('#summaryGrid');
+    grid.innerHTML='';
+    rows.forEach(([k,v])=>{
+      const kEl=document.createElement('div'); kEl.className='k'; kEl.textContent=k;
+      const vEl=document.createElement('div'); vEl.className='v'; vEl.textContent=v;
+      grid.appendChild(kEl); grid.appendChild(vEl);
+    });
+
+    // 해당 홀 CSV 라인
+    const payload = toBridgeJSON(r);
+    const line = csvHeader() + '\n' + holeToCSVLine(payload, holeNo);
+    $('#summaryCSV').textContent = line;
+
+    // 모달 표시
+    $('#summaryModal').classList.add('show');
+    $('#summaryModal').setAttribute('aria-hidden','false');
+  }
+
+  $('#closeSummary').addEventListener('click', closeSummary);
+  $('#editHoleBtn').addEventListener('click', ()=>{
+    closeSummary();
+    // 그대로 현재 홀에서 편집 계속
+  });
+  $('#confirmNextHole').addEventListener('click', ()=>{
+    closeSummary();
+    go(state.hole+1);
+  });
+  $('#copyCSV').addEventListener('click', ()=>{
+    const txt = $('#summaryCSV').textContent;
+    navigator.clipboard.writeText(txt).then(()=>{ alert('CSV 복사 완료'); });
+  });
+
+  function closeSummary(){
+    $('#summaryModal').classList.remove('show');
+    $('#summaryModal').setAttribute('aria-hidden','true');
+  }
+
   // Export schema (BRIDGE → compatible, minimal fields for later full SG in Korsekode)
   function toBridgeJSON(r){
     const holes=[];
-    for(let i=1;i<= (r.meta.holeCount||state.holeCount); i++){
+    const total = r.meta.holeCount || state.holeCount;
+    for(let i=1;i<= total; i++){
       const h=r.holes[i]||{};
       holes.push({
         hole:i,
@@ -534,32 +406,65 @@
     };
   }
 
+  function csvHeader(){
+    return ['player_id','course','date','hole','tee_club','tee_res','ap_dist_yd','ap_target','ap_res','gir','sg_lie','sg_strokes','sg_leave_ft','first_putt_ft','putts','penalties','notes'].join(',');
+  }
+
+  function csvEsc(x){
+    if(x==null) return '';
+    const s= String(x);
+    if(/[",\n]/.test(s)){ return `"${s.replaceAll('"','""')}"`; }
+    return s;
+  }
+
+  function holeToCSVLine(payload, holeNo){
+    const h = payload.holes.find(x=>x.hole===holeNo) || {};
+    return [
+      csvEsc(payload.meta.player_id),
+      csvEsc(payload.meta.course),
+      csvEsc(payload.meta.date),
+      csvEsc(holeNo),
+      csvEsc(h.tee?.club),
+      csvEsc(h.tee?.result),
+      csvEsc(h.approach?.dist_yd),
+      csvEsc(h.approach?.target),
+      csvEsc(h.approach?.result),
+      csvEsc(h.green?.gir),
+      csvEsc(h.short_game?.lie),
+      csvEsc(h.short_game?.strokes_to_green),
+      csvEsc(h.short_game?.leave_ft),
+      csvEsc(h.green?.first_putt_ft),
+      csvEsc(h.green?.putts),
+      csvEsc((h.penalties||[]).join('|')),
+      csvEsc(h.notes||'')
+    ].join(',');
+  }
+
   function toCSV(payload){
-    const header=['player_id','course','date','hole','tee_club','tee_res','ap_dist_yd','ap_target','ap_res','gir','sg_lie','sg_strokes','sg_leave_ft','first_putt_ft','putts','penalties','notes'];
-    const L=[]; L.push(header.join(','));
+    const H = csvHeader();
+    const L=[]; L.push(H);
     payload.holes.forEach(h=>{
       L.push([
-        payload.meta.player_id,
-        payload.meta.course,
-        payload.meta.date,
-        h.hole,
-        val(h.tee?.club),
-        val(h.tee?.result),
-        val(h.approach?.dist_yd),
-        val(h.approach?.target),
-        val(h.approach?.result),
-        val(h.green?.gir),
-        val(h.short_game?.lie),
-        val(h.short_game?.strokes_to_green),
-        val(h.short_game?.leave_ft),
-        val(h.green?.first_putt_ft),
-        val(h.green?.putts),
-        (h.penalties||[]).join('|'),
-        '"'+(h.notes||'').replaceAll('"','\"')+'"'
+        csvEsc(payload.meta.player_id),
+        csvEsc(payload.meta.course),
+        csvEsc(payload.meta.date),
+        csvEsc(h.hole),
+        csvEsc(h.tee?.club),
+        csvEsc(h.tee?.result),
+        csvEsc(h.approach?.dist_yd),
+        csvEsc(h.approach?.target),
+        csvEsc(h.approach?.result),
+        csvEsc(h.green?.gir),
+        csvEsc(h.short_game?.lie),
+        csvEsc(h.short_game?.strokes_to_green),
+        csvEsc(h.short_game?.leave_ft),
+        csvEsc(h.green?.first_putt_ft),
+        csvEsc(h.green?.putts),
+        csvEsc((h.penalties||[]).join('|')),
+        csvEsc(h.notes||'')
       ].join(','));
     });
     return L.join('\n');
-    function val(x){ return (x==null? '': x); }
   }
 
   function fromBridgeJSON(payload){
@@ -584,6 +489,7 @@
     save(r);
     state.holeCount = r.meta.holeCount||18;
     $('#holeCount').value = state.holeCount;
+    $('#progressBar').style.gridTemplateColumns = `repeat(${state.holeCount},1fr)`;
   }
 
   // kick
