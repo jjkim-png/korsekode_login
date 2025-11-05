@@ -1,502 +1,828 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>KLARUS — TK22 TrackMan Analyzer (Pro MVP)</title>
+
+  <!-- Dependencies (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <style>
+    :root{
+      --brand:#1b1a55; --accent:#4b3dd1; --ink:#0f172a; --muted:#6b7280;
+      --bg:#f5f7fb; --card:#ffffff; --border:#e6e8ef;
+      --good:#10b981; --bad:#ef4444; --warn:#f59e0b;
+      --radius:14px; --shadow:0 10px 30px rgba(17,18,54,.12);
+    }
+    :root.dark{
+      --bg:#0b0c14; --card:#10131c; --ink:#e8eaf1; --muted:#94a3b8; --border:#1f2431;
+      --brand:#7c86ff; --accent:#6d79ff; --shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);
+      font-family:Inter,system-ui,Segoe UI,Roboto,Apple SD Gothic Neo,Helvetica,Arial,sans-serif}
+    header{background:linear-gradient(135deg,var(--brand),#14133b 60%); color:#fff; padding:28px 18px}
+    .wrap{max-width:1200px;margin:0 auto;padding:18px}
+    h1{margin:0;font-weight:900;letter-spacing:.2px}
+    .sub{opacity:.9;font-weight:600;margin-top:6px}
+
+    .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+    .grid{display:grid;gap:14px}
+    @media (min-width:1000px){ .grid-2{grid-template-columns:1.1fr .9fr} .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))} }
+
+    .tabs{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .tab{border:1px solid var(--border);background:var(--card);border-radius:999px;padding:8px 14px;cursor:pointer;font-weight:800}
+    .tab.active{background:var(--accent);color:#fff;border-color:transparent}
+    .input-row{display:flex;gap:10px;flex-wrap:wrap}
+    label{font-size:12px;color:var(--muted);font-weight:800;letter-spacing:.2px}
+    input[type="number"], input[type="text"], select{
+      padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);min-width:110px;color:var(--ink)
+    }
+    input[type="file"]{padding:8px 0;color:var(--ink)}
+    .btn{background:var(--brand);color:#fff;border:none;border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:900;letter-spacing:.2px}
+    .btn.secondary{background:var(--accent)}
+    .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--border)}
+    .btn.warn{background:var(--warn);color:#111827}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .hint{font-size:12px;color:var(--muted)}
+    .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    @media(min-width:1000px){ .cards{grid-template-columns:repeat(4,minmax(0,1fr))} }
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 12px}
+    .k{font-size:11px;color:var(--muted);font-weight:900;letter-spacing:.3px;text-transform:uppercase}
+    .v{font-size:22px;font-weight:900;margin-top:6px}
+    .v.good{color:var(--good)} .v.bad{color:var(--bad)} .v.warn{color:var(--warn)}
+    .mapping{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    @media(min-width:1000px){ .mapping{grid-template-columns:repeat(3,minmax(0,1fr))} }
+    .sep{height:1px;background:var(--border);margin:10px 0}
+    footer{opacity:.7;font-size:12px;text-align:center;margin:24px 0 40px}
+
+    .pill{display:inline-flex;align-items:center;gap:8px;background:rgba(107,114,128,.08);border:1px solid var(--border);
+      border-radius:999px;padding:6px 10px;font-size:12px}
+    .row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+    .badge{padding:2px 8px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;font-size:12px;color:#3730a3;font-weight:900}
+    .topbar{display:flex;align-items:center;gap:10px;justify-content:space-between}
+    .switch{display:inline-flex;gap:8px;align-items:center}
+    .switch input{width:42px;height:24px;appearance:none;background:#c7c9d4;border-radius:999px;position:relative;outline:none;cursor:pointer}
+    .switch input:checked{background:#5b67ff}
+    .switch input:before{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:all .2s}
+    .switch input:checked:before{left:21px}
+    .note{font-size:12px;color:var(--muted);line-height:1.4}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap topbar">
+      <div>
+        <h1>KLARUS — TK22 TrackMan Analyzer (Pro MVP)</h1>
+        <div class="sub">선수 입력 0 · TrackMan Export 업로드 → 정밀 분포·바이어스·리스크 지표 및 코칭 처방</div>
+      </div>
+      <label class="switch">
+        <input id="themeToggle" type="checkbox"/>
+        <span>Dark</span>
+      </label>
+    </div>
+  </header>
+
+  <main class="wrap grid grid-2">
+    <!-- LEFT: Controls & Mapping -->
+    <section class="panel">
+      <div class="tabs" id="modeTabs">
+        <div class="tab active" data-mode="APP50">어프로치 50 (APP50)</div>
+        <div class="tab" data-mode="LNG50">롱게임 타깃 50 (LNG50)</div>
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="grid">
+        <div class="row">
+          <div>
+            <label>TrackMan Export 업로드 (CSV/XLSX)</label><br/>
+            <input type="file" id="fileInput" accept=".csv,.xlsx,.xls"/>
+            <div class="hint">50샷보다 많으면 아래 샘플링 규칙에 따라 50샷을 선택합니다.</div>
+          </div>
+          <div>
+            <label>단위</label><br/>
+            <select id="unitSelect">
+              <option value="m">미터 (m)</option>
+              <option value="yd">야드 (yd)</option>
+            </select>
+          </div>
+          <div>
+            <label>샘플링</label><br/>
+            <select id="sampleRule">
+              <option value="latest">최신 50</option>
+              <option value="first">최초 50</option>
+              <option value="random">무작위 50</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pill">
+          <span class="badge">필드 매핑</span>
+          파일 헤더를 자동 인식합니다. 필요 시 아래에서 수동 조정하세요. (브라우저에 매핑 저장)
+        </div>
+
+        <div id="mappingArea" class="mapping"></div>
+
+        <!-- APP50 Controls -->
+        <div id="appControls" class="grid">
+          <div class="row">
+            <div>
+              <label>타깃 거리 (APP50) — 0이면 캐리 중앙값으로 자동</label><br/>
+              <input type="number" id="targetDist" value="100" min="0" max="250" step="1"/>
+            </div>
+            <div>
+              <label>커버율 p (예: 80%)</label><br/>
+              <input type="number" id="coverageP" value="80" min="50" max="95" step="1"/>
+            </div>
+          </div>
+          <div class="note">* APP50 좌표: x = Offline(좌/우, +우측), y = Carry − TargetDistance</div>
+        </div>
+
+        <!-- LNG50 Controls -->
+        <div id="lngControls" class="grid" style="display:none">
+          <div class="row">
+            <div>
+              <label>커버율 p (예: 80%)</label><br/>
+              <input type="number" id="coverageP_LNG" value="80" min="50" max="95" step="1"/>
+            </div>
+            <div>
+              <label>좌측 경계 (m)</label><br/>
+              <input type="number" id="leftBound" value="20" min="0" max="60"/>
+            </div>
+            <div>
+              <label>우측 경계 (m)</label><br/>
+              <input type="number" id="rightBound" value="20" min="0" max="60"/>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label>좌측 해저드 가중 (wL)</label><br/>
+              <input type="number" id="wL" value="1.5" step="0.1"/>
+            </div>
+            <div>
+              <label>우측 해저드 가중 (wR)</label><br/>
+              <input type="number" id="wR" value="1.0" step="0.1"/>
+            </div>
+          </div>
+          <div class="note">* LNG50 좌표: x = Offline(좌/우, +우측), y = Carry. 에임 최적화는 좌/우 경계·가중을 반영합니다.</div>
+        </div>
+
+        <div class="row">
+          <button class="btn" id="analyzeBtn">분석 실행</button>
+          <button class="btn secondary" id="exportPdfBtn" disabled>리포트 PDF 다운로드</button>
+          <button class="btn ghost" id="clearBtn">초기화</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Chart & KPIs -->
+    <section class="panel">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div style="font-weight:900;font-size:18px">샷 분포 & p% 커버 타원</div>
+        <div class="hint" id="modeLabel">모드: APP50</div>
+      </div>
+      <canvas id="shotChart" height="400"></canvas>
+
+      <div class="sep"></div>
+
+      <div class="cards" id="kpiCards">
+        <!-- KPI cards will be injected -->
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    © The Klub 22 — KLARUS Pro MVP. 결과는 연습 데이터 품질과 환경 변수(온도/고도/바람)에 따라 달라질 수 있습니다.
+  </footer>
 <script>
-(function(){
-  const $ = (sel)=>document.querySelector(sel);
-  const $$ = (sel)=>Array.from(document.querySelectorAll(sel));
-  const L = (k)=> i18n[state.lang][k] || k;
+/* ========================
+   Theme Toggle
+   ======================== */
+const root = document.documentElement;
+const themeToggle = () => {
+  const dark = root.classList.toggle('dark');
+  localStorage.setItem('klarus_theme', dark?'dark':'light');
+};
+window.addEventListener('load', ()=>{
+  if(localStorage.getItem('klarus_theme')==='dark'){ root.classList.add('dark'); }
+  document.getElementById('themeToggle').checked = root.classList.contains('dark');
+});
+document.addEventListener('click', e=>{
+  if(e.target && e.target.id==='themeToggle'){ themeToggle(); }
+});
 
-  const i18n = {
-    ko:{
-      player:'선수 ID', course:'코스명', holes:'홀 수', tee:'티샷', club:'클럽', teeRes:'결과',
-      approach:'어프로치', distToPin:'핀까지 거리 (yd)', target:'목표', apRes:'결과',
-      green:'그린 & 퍼팅', gir:'GIR', firstPutt:'첫 퍼트 거리 (ft)', putts:'퍼트 수',
-      shortGame:'쇼트게임', sgLie:'라이', sgStrokes:'그린까지 타수', leave:'남은 거리 (ft)',
-      penalty:'패널티 & 메모', pen:'패널티', note:'메모'
+/* ========================
+   Utilities (Math & Stats)
+   ======================== */
+const clamp = (v,min,max)=>Math.min(max,Math.max(min,v));
+const mean = arr => arr.reduce((a,b)=>a+b,0)/arr.length;
+const std = (arr, m=mean(arr)) => {
+  if(arr.length<2) return 0;
+  return Math.sqrt(arr.reduce((s,v)=>s+(v-m)*(v-m),0)/(arr.length-1));
+};
+const cov2 = (x,y) => {
+  const n=Math.min(x.length,y.length);
+  const mx=mean(x), my=mean(y);
+  let s=0; for(let i=0;i<n;i++) s += (x[i]-mx)*(y[i]-my);
+  return s/(n-1||1);
+};
+function eigen2x2(a,b,c,d){
+  // Symmetric cov: b≈c
+  const tr=a+d, det=a*d-b*c;
+  const disc = Math.sqrt(Math.max(0,tr*tr-4*det));
+  const l1=(tr+disc)/2, l2=(tr-disc)/2;
+  // eigenvector for l1
+  let vx= b!==0 ? l1-d : 1, vy = b!==0 ? b : 0;
+  if(b===0){ vx=1; vy=0; }
+  const n=Math.hypot(vx,vy)||1; vx/=n; vy/=n;
+  return {lambda:[l1,l2], vec:[[vx,vy],[-vy,vx]]};
+}
+// Inverse normal (Acklam)
+function invNorm(u){
+  const a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.3577518672690,-30.66479806614716,2.506628277459239];
+  const b=[-54.47609879822406,161.5858368580409,-155.6989798598866,66.80131188771972,-13.28068155288572];
+  const c=[-0.007784894002430293,-0.3223964580411365,-2.400758277161838,-2.549732539343734,4.374664141464968,2.938163982698783];
+  const d=[0.007784695709041462,0.3224671290700398,2.445134137142996,3.754408661907416];
+  const pl=0.02425, ph=1-pl;
+  let x;
+  if(u<pl){
+    const q=Math.sqrt(-2*Math.log(u));
+    x=((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5];
+    x/=(((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1;
+  }else if(u>ph){
+    const q=Math.sqrt(-2*Math.log(1-u));
+    x=-(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/(((((d[0]*q+d[1])*q+d[2])*q+d[3])*q)+1);
+  }else{
+    const q=u-0.5, r=q*q;
+    x=((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5];
+    x*=q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+  }
+  return x;
+}
+// 2D ellipse coverage: chi-square quantile (df=2) via Wilson–Hilferty
+function chi2Quantile(p, k=2){
+  const z = invNorm(p);
+  const a = 1 - 2/(9*k) + z*Math.sqrt(2/(9*k));
+  return k * Math.pow(a,3);
+}
+function metersIfNeeded(v, unit){ return unit==='yd' ? v*0.9144 : v; }
+function toMetersArray(arr,unit){ return arr.map(v => metersIfNeeded(v,unit)); }
+// CDF for normal (for risk)
+function erf(x){ const sign=x<0?-1:1; x=Math.abs(x);
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const t=1/(1+p*x);
+  const y=1-((((a5*t+a4)*t+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+function normCdf(x, mu, sigma){ if(sigma<=0) return +(x>=mu); return 0.5*(1+erf((x-mu)/(sigma*Math.SQRT2))); }
+
+/* ========================
+   Chart (Scatter + Ellipse)
+   ======================== */
+let chart;
+function drawChart(points, options={}){
+  const ctx=document.getElementById('shotChart');
+  if(chart){ chart.destroy(); }
+  const datasets=[{
+    type:'scatter',
+    label:'Shots',
+    data: points.map(p=>({x:p.x, y:p.y})),
+    pointRadius:3,
+  }];
+
+  const annotations={ annotations:{} };
+  if(options.hLine!==undefined){
+    annotations.annotations.hline = {
+      type:'line', yMin: options.hLine, yMax: options.hLine,
+      borderColor:'#9CA3AF', borderDash:[6,6]
+    };
+  }
+  if(options.vLine!==undefined){
+    annotations.annotations.vline = {
+      type:'line', xMin: options.vLine, xMax: options.vLine,
+      borderColor:'#9CA3AF', borderDash:[6,6]
+    };
+  }
+  if(options.leftBound!==undefined){
+    annotations.annotations.leftBound = {
+      type:'box', xMin:-options.leftBound, xMax:-1e6,
+      yMin:-1e6, yMax:1e6, backgroundColor:'rgba(239,68,68,.08)', borderWidth:0
+    };
+  }
+  if(options.rightBound!==undefined){
+    annotations.annotations.rightBound = {
+      type:'box', xMin:options.rightBound, xMax:1e6,
+      yMin:-1e6, yMax:1e6, backgroundColor:'rgba(239,68,68,.08)', borderWidth:0
+    };
+  }
+  if(options.aimOffset!==undefined){
+    annotations.annotations.aim = {
+      type:'line', xMin:options.aimOffset, xMax:options.aimOffset,
+      borderColor:'#4b3dd1', borderWidth:2
+    };
+  }
+
+  // Ellipse overlay with chi-square scaling
+  const ellipse = options.ellipse; // {cx,cy,rx,ry,angle}
+  const plugin = {
+    id:'ellipseOverlay',
+    afterDatasetsDraw(chart,args){
+      if(!ellipse) return;
+      const {ctx, scales:{x,y}} = chart;
+      ctx.save();
+      ctx.translate(x.getPixelForValue(ellipse.cx), y.getPixelForValue(ellipse.cy));
+      ctx.rotate(-ellipse.angle); // invert y-axis orientation
+      const rxPx = Math.abs(x.getPixelForValue(ellipse.rx)-x.getPixelForValue(0));
+      const ryPx = Math.abs(y.getPixelForValue(ellipse.ry)-y.getPixelForValue(0));
+      // fill
+      ctx.globalAlpha=0.08; ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent')||'rgb(75,61,209)';
+      if(ctx.ellipse){
+        ctx.beginPath(); ctx.ellipse(0,0, rxPx, ryPx, 0, 0, Math.PI*2); ctx.fill();
+        ctx.globalAlpha=1; ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent')||'rgb(75,61,209)';
+        ctx.lineWidth=1.5; ctx.stroke();
+      }else{
+        const step=64; ctx.beginPath();
+        for(let i=0;i<=step;i++){ const t=i/step*2*Math.PI; const px=rxPx*Math.cos(t), py=ryPx*Math.sin(t);
+          if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py); }
+        ctx.fill(); ctx.globalAlpha=1; ctx.lineWidth=1.5; ctx.strokeStyle='rgb(75,61,209)'; ctx.stroke();
+      }
+      ctx.restore();
+    }
+  };
+
+  chart = new Chart(ctx, {
+    type:'scatter',
+    data:{datasets},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, annotation: annotations },
+      scales:{
+        x:{ title:{display:true, text:'좌/우 오프셋 (m, +우측)'},
+            grid:{color:'rgba(0,0,0,.06)'}, ticks:{color:getComputedStyle(document.documentElement).getPropertyValue('--ink')} },
+        y:{ title:{display:true, text: options.yLabel || 'Carry (m)'},
+            grid:{color:'rgba(0,0,0,.06)'}, ticks:{color:getComputedStyle(document.documentElement).getPropertyValue('--ink')} }
+      }
     },
-    en:{
-      player:'Player ID', course:'Course', holes:'Holes', tee:'Tee Shot', club:'Club', teeRes:'Result',
-      approach:'Approach', distToPin:'Dist to Pin (yd)', target:'Target', apRes:'Result',
-      green:'Green & Putting', gir:'GIR', firstPutt:'First Putt (ft)', putts:'Putts',
-      shortGame:'Short Game', sgLie:'Lie', sgStrokes:'Strokes to Green', leave:'Leave (ft)',
-      penalty:'Penalties & Notes', pen:'Penalty', note:'Notes'
-    }
+    plugins:[plugin]
+  });
+}
+
+/* ========================
+   KPI Builders
+   ======================== */
+function buildCards(pairs){
+  const cont=document.getElementById('kpiCards');
+  cont.innerHTML='';
+  const fmt=(v,dec=2)=> (isFinite(v)? v.toFixed(dec) : '—');
+  for(const p of pairs){
+    const card=document.createElement('div');
+    card.className='card';
+    card.innerHTML = `<div class="k">${p.k}</div>
+      <div class="v ${p.cls||''}">${p.vtxt ?? fmt(p.v,p.dec??2)}</div>
+      <div class="hint">${p.hint||''}</div>`;
+    cont.appendChild(card);
+  }
+}
+/* ========================
+   File Parsing & Mapping
+   ======================== */
+let RAW_ROWS = []; // original objects
+let COLS = [];     // header keys
+let MAPPING = {};  // selected column mapping
+let MODE = 'APP50';
+
+const REQUIRED_FIELDS = [
+  {key:'carry',    label:'Carry'},
+  {key:'offline',  label:'Offline (좌/우)'},
+  {key:'club',     label:'Club', optional:true},
+  {key:'ballspd',  label:'Ball Speed', optional:true},
+  {key:'clubspd',  label:'Club Speed', optional:true},
+  {key:'la',       label:'Launch Angle', optional:true},
+  {key:'aa',       label:'Attack Angle', optional:true},
+  {key:'fa',       label:'Face Angle', optional:true},
+  {key:'cp',       label:'Club Path', optional:true},
+  {key:'ftp',      label:'Face to Path', optional:true},
+  {key:'spinax',   label:'Spin Axis', optional:true},
+];
+
+const SYNONYMS = {
+  carry:['carry','carry(m)','carry_m','carry distance','carr','carr(m)','carry (m)','carry (yd)'],
+  offline:['offline','side','lateral','offline(m)','offline distance','face deviation','side (m)','offline (yd)'],
+  club:['club','club name'],
+  ballspd:['ball speed','ballspeed'],
+  clubspd:['club speed','clubspeed'],
+  la:['launch angle','launch'],
+  aa:['attack angle','attack'],
+  fa:['face angle','face'],
+  cp:['club path','path'],
+  ftp:['face to path','face-to-path','face2path','ftop'],
+  spinax:['spin axis','spinaxis','axis'],
+};
+
+function guessColumn(key){
+  const cand = SYNONYMS[key]||[];
+  const lower = COLS.map(c=>c.toLowerCase());
+  for(const s of cand){
+    const idx = lower.indexOf(s);
+    if(idx>=0) return COLS[idx];
+  }
+  // fallback simple contains
+  for(let i=0;i<COLS.length;i++){
+    if(COLS[i].toLowerCase().includes(key)) return COLS[i];
+  }
+  return '';
+}
+
+function renderMapping(){
+  const area = document.getElementById('mappingArea');
+  area.innerHTML='';
+  COLS.sort();
+  for(const f of REQUIRED_FIELDS){
+    const div=document.createElement('div');
+    const selId=`map_${f.key}`;
+    const saved = localStorage.getItem('klarus_map_'+f.key);
+    // saved mapping reuse if still exists
+    if(saved && COLS.includes(saved)) MAPPING[f.key]=saved;
+    div.innerHTML = `
+      <label>${f.label}${f.optional? ' (선택)' : ''}</label><br/>
+      <select id="${selId}" data-map="${f.key}">
+        <option value="">— 선택 —</option>
+        ${COLS.map(c=>`<option value="${c}" ${MAPPING[f.key]===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+    `;
+    area.appendChild(div);
+  }
+  area.querySelectorAll('select').forEach(sel=>{
+    sel.addEventListener('change',e=>{
+      const k=e.target.dataset.map; MAPPING[k]=e.target.value;
+      localStorage.setItem('klarus_map_'+k, MAPPING[k]||'');
+    });
+  });
+}
+
+function autoMap(){
+  MAPPING={};
+  for(const f of REQUIRED_FIELDS){
+    const g = guessColumn(f.key);
+    if(g) MAPPING[f.key]=g;
+  }
+  renderMapping();
+}
+
+function parseCSV(file){
+  return new Promise((resolve,reject)=>{
+    Papa.parse(file,{
+      header:true, dynamicTyping:true, skipEmptyLines:true,
+      complete: res => resolve(res.data),
+      error: err => reject(err)
+    });
+  });
+}
+
+function parseXLSX(file){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = e=>{
+      const wb = XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const data = XLSX.utils.sheet_to_json(ws,{defval:null, raw:true});
+      resolve(data);
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+document.getElementById('fileInput').addEventListener('change', async (e)=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    RAW_ROWS = [];
+    const ext = f.name.split('.').pop().toLowerCase();
+    if(ext==='csv') RAW_ROWS = await parseCSV(f);
+    else RAW_ROWS = await parseXLSX(f);
+
+    // Clean: remove empty rows
+    RAW_ROWS = RAW_ROWS.filter(r=>r && Object.values(r).some(v=>v!==null && v!=='' && v!==undefined));
+
+    COLS = Object.keys(RAW_ROWS[0]||{});
+    autoMap();
+    document.getElementById('exportPdfBtn').disabled=true;
+  }catch(err){
+    alert('파일을 읽는 중 오류가 발생했습니다: '+err.message);
+  }
+});
+
+/* ========================
+   Mode Tabs
+   ======================== */
+document.querySelectorAll('#modeTabs .tab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('#modeTabs .tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    MODE = t.dataset.mode;
+    document.getElementById('appControls').style.display = (MODE==='APP50')?'grid':'none';
+    document.getElementById('lngControls').style.display = (MODE==='LNG50')?'grid':'none';
+    document.getElementById('modeLabel').textContent = '모드: '+MODE;
+    document.getElementById('exportPdfBtn').disabled=true;
+  });
+});
+
+/* ========================
+   Data Extraction (with sampling)
+   ======================== */
+function pickVals(rows, col){ return rows.map(r=>{
+  const v = r[col];
+  if(v===null || v===undefined || v==='') return NaN;
+  if(typeof v==='string'){ const n = parseFloat(v.replace(/[^\d.-]/g,'')); return isNaN(n)?NaN:n; }
+  return +v;
+});}
+function sampleRows(rows, rule='latest', n=50){
+  if(rows.length<=n) return rows.slice();
+  if(rule==='first') return rows.slice(0,n);
+  if(rule==='latest') return rows.slice(-n);
+  // random
+  const idx = rows.map((_,i)=>i);
+  for(let i=idx.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [idx[i],idx[j]]=[idx[j],idx[i]]; }
+  return idx.slice(0,n).sort((a,b)=>a-b).map(i=>rows[i]);
+}
+function extractData(){
+  if(!RAW_ROWS.length){ alert('먼저 파일을 업로드하세요.'); return null; }
+  const rule = document.getElementById('sampleRule').value;
+  const rows = sampleRows(RAW_ROWS, rule, 50);
+  const unit = document.getElementById('unitSelect').value;
+
+  const carryC = MAPPING.carry, offC = MAPPING.offline;
+  if(!carryC || !offC){ alert('Carry / Offline 매핑을 확인하세요.'); return null; }
+
+  // arrays
+  let carry = pickVals(rows,carryC);
+  let offline = pickVals(rows,offC);
+
+  // Clean invalid numbers
+  const X=[], Y=[];
+  for(let i=0;i<carry.length;i++){
+    if(!isFinite(carry[i]) || !isFinite(offline[i])) continue;
+    // remove obvious dummy values
+    if(Math.abs(carry[i])<0.1 && Math.abs(offline[i])<0.1) continue;
+    X.push( metersIfNeeded(offline[i], unit) ); // lateral (m)
+    Y.push( metersIfNeeded(carry[i], unit) );   // carry (m)
+  }
+  // optional spin axis
+  let spinax = MAPPING.spinax ? pickVals(rows,MAPPING.spinax) : [];
+  spinax = spinax.filter(v=>isFinite(v));
+
+  return {X, Y, spinax, rowsUsed: X.length};
+}
+
+/* ========================
+   Analytics — APP50 (2D chi-square ellipse)
+   ======================== */
+function computeAPP50(data, target, coverageP){
+  // Auto target if 0: median carry
+  if(!isFinite(target) || target<=0){
+    const sorted = data.Y.slice().sort((a,b)=>a-b); const mid = Math.floor(sorted.length/2);
+    target = (sorted.length%2 ? sorted[mid] : (sorted[mid-1]+sorted[mid])/2);
+  }
+
+  const x = data.X.slice();
+  const y = data.Y.map(v=>v - target);
+
+  const mx=mean(x), my=mean(y);
+  const sx=std(x), sy=std(y);
+  const cv=cov2(x,y);
+
+  // eigen of covariance
+  const eig = eigen2x2(sx*sx, cv, cv, sy*sy);
+  // sort eigenvalues descending
+  let lam1=eig.lambda[0], lam2=eig.lambda[1];
+  let v1=eig.vec[0], v2=eig.vec[1];
+  if(lam2>lam1){ [lam1,lam2]=[lam2,lam1]; [v1,v2]=[v2,v1]; }
+  const sig1=Math.sqrt(Math.max(lam1,1e-12));
+  const sig2=Math.sqrt(Math.max(lam2,1e-12));
+  const angle = Math.atan2(v1[1],v1[0]); // major axis direction
+
+  // chi-square scaling for central coverage p%
+  const p = clamp(coverageP/100, 0.5, 0.99);
+  const chi2 = chi2Quantile(p, 2); // df=2
+  const scale = Math.sqrt(chi2);
+  const rx = scale*sig1, ry = scale*sig2;
+
+  // Ellipse area (at 1-sigma, and at p% scale)
+  const area1 = Math.PI*sig1*sig2;
+  const KEL = Math.PI*rx*ry;
+
+  // Bias index (mean offsets)
+  const KBIx = mx, KBIy = my;
+
+  // Rectangular window approx using 1D z (for quick “폭×깊이” 감각)
+  const z = Math.abs(invNorm((1+p)/2));
+  const KWS_w = 2*z*sx;
+  const KWS_h = 2*z*sy;
+
+  // CEP50 (circular approx around mean)
+  const CEP50 = 0.589*Math.sqrt(sx*sx + sy*sy);
+
+  // Precision scores (higher better)
+  const baseX=7.0, baseY=7.0; // m — 팀 데이터로 추후 보정
+  const KLS = clamp(100*(1 - (sx/baseX)), 0, 100);
+  const KCP = clamp(100*(1 - (sy/baseY)), 0, 100);
+
+  // Spin axis consistency
+  let KSC=NaN;
+  if(data.spinax && data.spinax.length>=10){
+    const s = std(data.spinax);
+    const baseSA=6; // deg
+    KSC = clamp(100*(1 - (s/baseSA)), 0, 100);
+  }
+
+  // KPG (SG-APP 등가 지수: 거친 상대지표)
+  const radial = Math.sqrt(KBIx*KBIx + KBIy*KBIy + sx*sx + sy*sy);
+  const baseR=18; // m
+  const KPG = clamp(100*(1 - (radial/baseR)), 0, 100);
+
+  // Chart points (x, y+target), hLine at target
+  const points = x.map((xi,i)=>({x:xi, y:y[i]+target}));
+
+  // Ellipse overlay at mean (mx, target+my)
+  const ellipse = { cx: mx, cy: target+my, rx, ry, angle };
+
+  return {
+    points,
+    ellipse,
+    kpis: [
+      {k:'KCP (장단 정밀)', v:KCP, dec:1, hint:'높을수록 좋음'},
+      {k:'KLS (좌우 정밀)', v:KLS, dec:1, hint:'높을수록 좋음'},
+      {k:'KELₚ 면적 (m²)', v:KEL, dec:2, hint:`p=${coverageP}% 타원 면적`},
+      {k:'KWSₚ 폭×깊이 (m)', vtxt:`${KWS_w.toFixed(1)} × ${KWS_h.toFixed(1)}`, hint:`1D 근사, p=${coverageP}%`},
+      {k:'Bias X/Y (m)', vtxt:`${KBIx.toFixed(1)} / ${KBIy.toFixed(1)}`, hint:'좌우 / 장단 오프셋'},
+      {k:'CEP50 (m)', v:CEP50, dec:2, hint:'중앙 50% 반경 근사'},
+      {k:'KPG Index', v:KPG, dec:1, hint:'SG-APP 등가 지수(상대)'},
+      {k:'KSC (구질 일관)', v:KSC, dec:1, hint:'Spin Axis 표준편차 기반'}
+    ],
+    yLabel:'Carry (m)',
+    hLine: target,
+    vLine: 0
   };
+}
 
-  const clubs = ['D','3W','5W','UT','4I','5I','6I','7I','8I','9I','PW','GW','SW','LW'];
-  const teeResults = [
-    {k:'FW', lab:'페어웨이'},
-    {k:'R',  lab:'러프'},
-    {k:'B',  lab:'벙커'},
-    {k:'T',  lab:'나무/정글'},
-    {k:'O',  lab:'OB'},
-    {k:'H',  lab:'해저드'}
-  ];
-  const targets = [
-    {k:'safeL',lab:'세이프 L'},
-    {k:'pin',  lab:'핀'},
-    {k:'safeR',lab:'세이프 R'}
-  ];
-  const apResults = [
-    {k:'G', lab:'온그린'},
-    {k:'L', lab:'좌 미스'},
-    {k:'R', lab:'우 미스'},
-    {k:'S', lab:'짧음'},
-    {k:'LNG',lab:'긺'},
-  ];
-  const sgLies = [
-    {k:'FW',lab:'페어웨이'},
-    {k:'RF',lab:'러프'},
-    {k:'BK',lab:'벙커'},
-  ];
-  const pens = [
-    {k:'OB',lab:'OB +1'},
-    {k:'HZ',lab:'해저드 +1'},
-    {k:'UP',lab:'언플 +1'}
-  ];
+/* ========================
+   Analytics — LNG50
+   ======================== */
+function computeLNG50(data, coverageP, leftBound, rightBound, wL, wR){
+  const x = data.X.slice();
+  const y = data.Y.slice();
+  const mx=mean(x), sx=std(x), my=mean(y), sy=std(y);
 
-  let state = {
-    lang:'ko',
-    hole:1,
-    holeCount:18,
-    stack:[], // for last-field removal
+  const p=clamp(coverageP/100,0.5,0.99);
+  const chi2 = chi2Quantile(p, 2); // df=2
+  const scale = Math.sqrt(chi2);
+
+  // Ellipse radii (treat lateral & carry variance orthogonal)
+  const rx = scale*sx;
+  const ry = scale*sy;
+  const ellipse = { cx: mx, cy: my, rx, ry, angle: 0 };
+
+  // KFW required width
+  // (For 1D laterals, 2-sided central coverage uses z instead of chi2)
+  const z = Math.abs(invNorm((1+p)/2));
+  const KFW = 2*z*sx;
+
+  // Risk-optimal aim offset δ*
+  let best={delta:0, loss:Infinity};
+  for(let d=-30; d<=30; d+=0.1){
+    const mu = mx + d;
+    const pL = normCdf(-leftBound, mu, sx);      // left side hit (x<-LB)
+    const pR = 1 - normCdf(rightBound, mu, sx);  // right side hit (x>+RB)
+    const loss = wL*pL + wR*pR;
+    if(loss<best.loss){ best={delta:d, loss}; }
+  }
+  const aimOffset = best.delta;
+  const r95 = 2.45*sx;
+
+  const points = x.map((xi,i)=>({x:xi, y:y[i]}));
+  // Relative “risk safety” index
+  const denom = (wL+wR)>0 ? (wL+wR) : 1;
+  const KDR = clamp(100*(1 - best.loss/denom), 0, 100);
+
+  return {
+    points,
+    ellipse,
+    kpis: [
+      {k:'KFWₚ (필요 페어웨이 폭, m)', v:KFW, dec:1, hint:`p=${coverageP}% 기준`},
+      {k:'Aim Offset δ* (m)', v:aimOffset, dec:2, hint:'+는 우측 조준'},
+      {k:'KDR (리스크)', v:KDR, dec:1, hint:'높을수록 안전'},
+      {k:'μₓ / σₓ (m)', vtxt:`${mx.toFixed(2)} / ${sx.toFixed(2)}`, hint:'평균 좌우 / 표준편차'},
+      {k:'R95 (좌우) m', v:r95, dec:2, hint:'95% 좌우 범위 근사'},
+      {k:'샷 수', v:points.length, dec:0, hint:'분석 대상'}
+    ],
+    yLabel:'Carry (m)',
+    vLine: 0,
+    leftBound: leftBound,
+    rightBound: rightBound,
+    aimOffset: aimOffset
   };
+}
 
-  // Initialize dynamic buttons
-  function makeButtons(list, mountSel, bindKey){
-    const host = typeof mountSel==='string'? $(mountSel): mountSel;
-    host.innerHTML = '';
-    list.forEach(item=>{
-      const b=document.createElement('button');
-      b.className='btn';
-      b.textContent=item.lab||item;
-      b.dataset.val=item.k||item;
-      if(bindKey) b.dataset.bind=bindKey;
-      b.addEventListener('click',()=>toggleBtn(b, bindKey));
-      host.appendChild(b);
-    });
-  }
-  makeButtons(clubs, '#clubBtns', 'club');
-  makeButtons(teeResults, '#teeResBtns', 'tee');
-  makeButtons(targets, '#targetBtns', 'target');
-  makeButtons(apResults, '#apResBtns', 'ap');
-  makeButtons(sgLies, '#sgLieBtns', 'sgLie');
-  makeButtons(pens, '#penBtns', 'pen');
+/* ========================
+   Analyze Button
+   ======================== */
+document.getElementById('analyzeBtn').addEventListener('click', ()=>{
+  const dat = extractData();
+  if(!dat) return;
+  if(dat.rowsUsed<8){ alert('안정적인 분포 추정을 위해 최소 8샷 이상이 필요합니다.'); return; }
 
-  function toggleBtn(btn, key){
-    // single-select per group except penalties (multi)
-    const multi = key==='pen';
-    const group = $$(`[data-bind="${key}"]`);
-    if(!multi){ group.forEach(x=>x.removeAttribute('aria-pressed')); }
-    const pressed = btn.getAttribute('aria-pressed')==='true';
-    btn.setAttribute('aria-pressed', (!pressed).toString());
-    if(!multi){
-      setField(key, (!pressed)? btn.dataset.val: null);
-    } else {
-      // toggle presence in penalties
-      const cur = getHole().penalties || [];
-      const val = btn.dataset.val;
-      const i = cur.indexOf(val);
-      if(i>-1){ cur.splice(i,1);} else {cur.push(val);}
-      setField('penalties', cur);
-    }
-    refreshStatus();
+  if(MODE==='APP50'){
+    const target = +document.getElementById('targetDist').value;
+    const p = +document.getElementById('coverageP').value || 80;
+    const res = computeAPP50(dat, target, p);
+    drawChart(res.points, {ellipse:res.ellipse, hLine:res.hLine, vLine:res.vLine, yLabel:res.yLabel});
+    buildCards(res.kpis);
+  }else{
+    const p = +document.getElementById('coverageP_LNG').value || 80;
+    const LB = +document.getElementById('leftBound').value || 20;
+    const RB = +document.getElementById('rightBound').value || 20;
+    const wL = +document.getElementById('wL').value || 1.5;
+    const wR = +document.getElementById('wR').value || 1.0;
+    const res = computeLNG50(dat, p, LB, RB, wL, wR);
+    drawChart(res.points, {ellipse:res.ellipse, vLine:0, leftBound:LB, rightBound:RB, aimOffset:res.aimOffset, yLabel:res.yLabel});
+    buildCards(res.kpis);
   }
+  document.getElementById('exportPdfBtn').disabled=false;
+});
 
-  // Storage helpers
-  const KEY = 'kodeck_round_v1';
-  function load(){
-    const raw=localStorage.getItem(KEY);
-    return raw? JSON.parse(raw): {
-      meta:{ playerId:'', course:'', date:new Date().toISOString().slice(0,10), holeCount:18 },
-      holes:{} // id -> partials
-    };
-  }
-  function save(obj){ localStorage.setItem(KEY, JSON.stringify(obj)); }
-  function getRound(){ return load(); }
-  function getHole(n=state.hole){ const r=getRound(); return r.holes[n]||(r.holes[n]={}); }
-  function setHole(n, data){ const r=getRound(); r.holes[n]=Object.assign({}, r.holes[n]||{}, data); save(r); }
-  function setField(key, val){ const h=getHole(); if(val===null){ delete h[key]; } else { h[key]=val; } setHole(state.hole,h); }
+/* ========================
+   Export PDF
+   ======================== */
+document.getElementById('exportPdfBtn').addEventListener('click', async ()=>{
+  if(!chart){ alert('먼저 분석을 실행하세요.'); return; }
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({unit:'pt', format:'a4'});
+  const pad=36;
 
-  // UI bindings
-  function syncMeta(){
-    const r=getRound();
-    $('#playerId').value=r.meta.playerId||'';
-    $('#courseName').value=r.meta.course||'';
-    $('#holeCount').value=r.meta.holeCount||state.holeCount;
-    state.holeCount = parseInt($('#holeCount').value||'18',10);
-    // progress bar col count 반영
-    $('#progressBar').style.gridTemplateColumns = `repeat(${state.holeCount},1fr)`;
-  }
-  function writeMeta(){
-    const r=getRound();
-    r.meta.playerId=$('#playerId').value.trim();
-    r.meta.course=$('#courseName').value.trim();
-    r.meta.date=r.meta.date||new Date().toISOString().slice(0,10);
-    r.meta.holeCount=parseInt($('#holeCount').value||'18',10); // ✅ 저장
-    save(r);
-  }
+  // Title
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(16);
+  pdf.text('KLARUS — TrackMan Analyzer (Pro MVP)', pad, 42);
+  pdf.setFont('helvetica','normal'); pdf.setFontSize(11);
+  pdf.text(`Mode: ${MODE} · Generated: ${new Date().toLocaleString()}`, pad, 60);
 
-  function go(n){
-    writeMeta();
-    const max = parseInt($('#holeCount').value||'18',10);
-    state.holeCount = Math.max(3, Math.min(27, max));
-    state.hole = Math.max(1, Math.min(state.holeCount, n));
-    $('#holeNum').value = state.hole;
-    $('#holeLabel').textContent = `HOLE ${state.hole}`;
-    renderHole();
-    renderDots();
-  }
+  // Chart image
+  const img = chart.toBase64Image('image/png',1);
+  pdf.addImage(img,'PNG', pad, 80, 523, 320);
 
-  function isHoleComplete(h){
-    const teeOk = !!(h.club && h.tee);
-    const apOk  = !!(h.ap || h.target || h.dist!=null);
-    const puttOk= (h.gir==='Y' && h.putts!=null) || (h.gir==='N' && h.sgLie && h.sgStrokes!=null && h.putts!=null);
-    return teeOk && apOk && puttOk;
-  }
+  // KPIs in two columns
+  const cards = [...document.querySelectorAll('#kpiCards .card')];
+  let y=420, colX=pad, colW=260, rowH=54, col=0;
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(12);
+  pdf.text('Key Metrics', pad, y); y+=14;
+  pdf.setFont('helvetica','normal'); pdf.setFontSize(11);
 
-  function renderDots(){
-    const host = $('#progressBar');
-    host.innerHTML='';
-    const r = getRound();
-    for(let i=1;i<=state.holeCount;i++){
-      const d = r.holes[i]||{};
-      const el=document.createElement('div');
-      el.className='dot';
-      if(Object.keys(d).length){
-        el.classList.add(isHoleComplete(d) ? 'ok' : (d.penalties?.length ? 'bad' : 'warn'));
-      }
-      host.appendChild(el);
+  let iStart=0;
+  for(let i=0;i<cards.length;i++){
+    const c = cards[i];
+    const k = c.querySelector('.k').textContent.trim();
+    const v = c.querySelector('.v').textContent.trim();
+    const h = c.querySelector('.hint').textContent.trim();
+    pdf.text(`• ${k}: ${v}`, colX, y);
+    y += 14;
+    pdf.setTextColor(120); pdf.text(`   ${h}`, colX, y); pdf.setTextColor(0);
+    y += rowH-14;
+    if(y>780){ // next column or page
+      if(col===0){ col=1; colX=pad+colW+24; y=434; }
+      else{ pdf.addPage(); y=60; col=0; colX=pad; }
     }
   }
 
-  function renderHole(){
-    // clear actives
-    $$('[aria-pressed]').forEach(x=>x.removeAttribute('aria-pressed'));
-    const h = getHole();
-    // set actives from state
-    ['club','tee','target','ap','gir','putts','sgStrokes','sgLie'].forEach(k=>{
-      if(h[k]!=null){ const b = $(`[data-bind="${k}"][data-val="${h[k]}"]`); if(b) b.setAttribute('aria-pressed','true'); }
-    });
-    if(h.penalties){ h.penalties.forEach(p=>{ const b=$(`[data-bind="pen"][data-val="${p}"]`); if(b) b && b.setAttribute('aria-pressed','true');}); }
-    $('#dist').value = h.dist||'';
-    $('#firstPutt').value = h.firstPutt||'';
-    $('#leaveFt').value = h.leaveFt||'';
-    $('#notes').value = h.notes||'';
-    $('#sgCard').style.display = h.gir==='N'? 'block':'none';
-    refreshStatus();
-  }
+  // Footer
+  pdf.setFontSize(9); pdf.setTextColor(120);
+  pdf.text('© The Klub 22 — KLARUS Pro MVP. Results depend on input quality and environment.', pad, 800);
 
-  function refreshStatus(){
-    const h = getHole();
-    const parts = [];
-    if(h.club) parts.push(`Tee:${h.club}`);
-    if(h.tee) parts.push(h.tee);
-    if(h.ap) parts.push(h.ap);
-    if(h.gir) parts.push(`GIR:${h.gir}`);
-    if(h.putts!=null) parts.push(`${h.putts}P`);
-    if(h.penalties&&h.penalties.length) parts.push('PEN');
-    $('#holeStatus').textContent = parts.join(' · ') || '—';
-  }
+  pdf.save(`KLARUS_Report_${MODE}_${Date.now()}.pdf`);
+});
 
-  // inputs
-  $('#dist').addEventListener('change', e=>setField('dist', num(e.target.value)));
-  $('#firstPutt').addEventListener('change', e=>setField('firstPutt', num(e.target.value)));
-  $('#leaveFt').addEventListener('change', e=>setField('leaveFt', num(e.target.value)));
-  $('#notes').addEventListener('change', e=>setField('notes', e.target.value));
+/* ========================
+   Clear
+   ======================== */
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  RAW_ROWS=[]; COLS=[]; MAPPING={};
+  document.getElementById('fileInput').value='';
+  document.getElementById('mappingArea').innerHTML='';
+  document.getElementById('kpiCards').innerHTML='';
+  if(chart){ chart.destroy(); chart=null; }
+  document.getElementById('exportPdfBtn').disabled=true;
+});
 
-  // Enter 이동 & 전체 선택
-  ['#dist','#firstPutt','#leaveFt'].forEach(sel=>{
-    const el=$(sel);
-    el.addEventListener('focus', ()=>{ el.select(); });
-    el.addEventListener('keydown', (e)=>{
-      if(e.key==='Enter'){
-        e.preventDefault();
-        if(sel==='#dist') $('#firstPutt').focus();
-        else if(sel==='#firstPutt') $('#leaveFt').focus();
-        else $('#saveBtn').click();
-      }
-    });
-  });
-
-  $('#holeNum').addEventListener('change', e=>go(parseInt(e.target.value||'1',10)));
-  $('#prevHole').addEventListener('click', ()=>go(state.hole-1));
-  $('#nextHole').addEventListener('click', ()=>go(state.hole+1));
-  $('#holeCount').addEventListener('change', ()=>{
-    const v=parseInt($('#holeCount').value||'18',10);
-    state.holeCount=Math.max(3,Math.min(27,v));
-    $('#progressBar').style.gridTemplateColumns = `repeat(${state.holeCount},1fr)`;
-    renderDots(); go(state.hole);
-  });
-
-  // bind generic buttons by delegation
-  document.body.addEventListener('click', (e)=>{
-    const t=e.target.closest('[data-bind]');
-    if(!t) return;
-    const key=t.dataset.bind;
-    const val=t.dataset.val;
-
-    if(key==='ap'){
-      setField('ap', val);
-      if(val!=='G'){ setField('gir','N'); $('#sgCard').style.display='block'; }
-      refreshStatus(); return;
-    }
-    if(key==='gir'){
-      setField('gir', val);
-      $('#sgCard').style.display = val==='N'? 'block':'none';
-    } else if(key==='putts'){
-      setField('putts', parseInt(val,10));
-    } else if(key==='sgStrokes'){
-      setField('sgStrokes', parseInt(val,10));
-    } else if(key==='club' || key==='tee' || key==='target' || key==='sgLie'){
-      setField(key, val);
-    }
-    refreshStatus();
-  });
-
-  // actions
-  $('#undoBtn').addEventListener('click', ()=>{
-    const r=getRound();
-    const h=r.holes[state.hole]||{};
-    state.stack.push(JSON.stringify(h));
-    // heuristic last-field removal
-    const order=['notes','penalties','putts','firstPutt','leaveFt','sgStrokes','sgLie','gir','ap','target','dist','tee','club'];
-    for(const k of order){ if(h[k]!=null){ delete h[k]; break; } }
-    setHole(state.hole,h); renderHole();
-  });
-  $('#clearBtn').addEventListener('click', ()=>{ setHole(state.hole, {}); renderHole(); });
-
-  // === Quick Summary flow ===
-  $('#saveBtn').addEventListener('click', ()=>{
-    writeMeta();
-    const r=getRound();
-    if(!r.meta.playerId){ alert('선수 ID를 입력해 주세요.'); $('#playerId').focus(); return; }
-    // 요약 표시(현재 홀)
-    showSummary(state.hole);
-  });
-
-  // import / export
-  $('#exportBtn').addEventListener('click', ()=>{
-    writeMeta();
-    const r = getRound();
-    if(!r.meta.playerId){ alert('선수 ID가 없습니다.'); $('#playerId').focus(); return; }
-    if(Object.keys(r.holes).length===0){ alert('기록된 홀이 없습니다.'); return; }
-    const payload = toBridgeJSON(r);
-    const csv = toCSV(payload);
-    const blobJson = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
-    const blobCsv = new Blob([csv], {type:'text/csv'});
-    download(blobJson, `kodeck_${r.meta.playerId||'player'}_${r.meta.date}.json`);
-    setTimeout(()=>download(blobCsv, `kodeck_${r.meta.playerId||'player'}_${r.meta.date}.csv`), 250);
-  });
-  $('#importBtn').addEventListener('click', ()=>{
-    const inp=document.createElement('input');
-    inp.type='file'; inp.accept='.json';
-    inp.onchange=(e)=>{
-      const f=e.target.files[0];
-      const rd=new FileReader();
-      rd.onload=()=>{
-        try{ const data=JSON.parse(rd.result); fromBridgeJSON(data); renderDots(); renderHole(); }
-        catch(err){ alert('JSON 파싱 오류'); }
-      };
-      rd.readAsText(f);
-    };
-    inp.click();
-  });
-
-  // 새 라운드
-  $('#newRoundBtn').addEventListener('click', ()=>{
-    const today = new Date().toISOString().slice(0,10);
-    const holeCount = parseInt($('#holeCount').value||'18',10);
-    save({ meta:{ playerId:'', course:'', date:today, holeCount }, holes:{} });
-    state.hole=1; state.holeCount=holeCount;
-    syncMeta(); renderDots(); renderHole();
-    $('#playerId').focus();
-  });
-
-  // language toggle
-  $('#langToggle').addEventListener('change', (e)=>{
-    state.lang = e.target.checked? 'en':'ko';
-    $$('[data-t]').forEach(el=>{ const k=el.getAttribute('data-t'); el.textContent=L(k); });
-  });
-
-  // helpers
-  function num(v){ const n=parseInt(v,10); return isFinite(n)? n: '' }
-  function download(blob, filename){
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob); a.download=filename; a.click();
-    URL.revokeObjectURL(a.href);
-  }
-
-  // === Summary Modal helpers ===
-  function showSummary(holeNo){
-    const r=getRound();
-    const h=r.holes[holeNo]||{};
-    // 진행도 표시를 위해 즉시 반영
-    renderDots();
-
-    // 제목/메타
-    $('#summaryTitle').textContent = `Hole ${holeNo} Summary`;
-    $('#summaryMeta').textContent = `${r.meta.playerId||''} · ${r.meta.course||''} · ${r.meta.date||''}`;
-
-    // 사람이 읽는 요약
-    const rows = [
-      ['Tee', `${h.club||'-'} / ${h.tee||'-'}`],
-      ['Approach', `${(h.dist??'-')}yd / ${h.target||'-'} / ${h.ap||'-'}`],
-      ['GIR', h.gir||'-'],
-      ['Short Game', h.gir==='N' ? `${h.sgLie||'-'} / ${h.sgStrokes??'-'} / leave ${h.leaveFt??'-'}ft` : '—'],
-      ['Putts', (h.putts!=null? h.putts : '-')],
-      ['Penalties', (h.penalties&&h.penalties.length? h.penalties.join('|') : '-')],
-      ['Notes', (h.notes||'-')]
-    ];
-    const grid = $('#summaryGrid');
-    grid.innerHTML='';
-    rows.forEach(([k,v])=>{
-      const kEl=document.createElement('div'); kEl.className='k'; kEl.textContent=k;
-      const vEl=document.createElement('div'); vEl.className='v'; vEl.textContent=v;
-      grid.appendChild(kEl); grid.appendChild(vEl);
-    });
-
-    // 해당 홀 CSV 라인
-    const payload = toBridgeJSON(r);
-    const line = csvHeader() + '\n' + holeToCSVLine(payload, holeNo);
-    $('#summaryCSV').textContent = line;
-
-    // 모달 표시
-    $('#summaryModal').classList.add('show');
-    $('#summaryModal').setAttribute('aria-hidden','false');
-  }
-
-  $('#closeSummary').addEventListener('click', closeSummary);
-  $('#editHoleBtn').addEventListener('click', ()=>{
-    closeSummary();
-    // 그대로 현재 홀에서 편집 계속
-  });
-  $('#confirmNextHole').addEventListener('click', ()=>{
-    closeSummary();
-    go(state.hole+1);
-  });
-  $('#copyCSV').addEventListener('click', ()=>{
-    const txt = $('#summaryCSV').textContent;
-    navigator.clipboard.writeText(txt).then(()=>{ alert('CSV 복사 완료'); });
-  });
-
-  function closeSummary(){
-    $('#summaryModal').classList.remove('show');
-    $('#summaryModal').setAttribute('aria-hidden','true');
-  }
-
-  // Export schema (BRIDGE → compatible, minimal fields for later full SG in Korsekode)
-  function toBridgeJSON(r){
-    const holes=[];
-    const total = r.meta.holeCount || state.holeCount;
-    for(let i=1;i<= total; i++){
-      const h=r.holes[i]||{};
-      holes.push({
-        hole:i,
-        par:null,             // optional later fill
-        tee:{ club:h.club||null, result:h.tee||null },
-        approach:{ dist_yd: h.dist||null, target:h.target||null, result:h.ap||null },
-        green:{ gir: h.gir||null, first_putt_ft: h.firstPutt||null, putts: (h.putts!=null? h.putts: null) },
-        short_game: h.gir==='N'? { lie:h.sgLie||null, strokes_to_green:h.sgStrokes||null, leave_ft:h.leaveFt||null } : null,
-        penalties: h.penalties||[],
-        notes: h.notes||''
-      });
-    }
-    return {
-      meta:{ player_id:r.meta.playerId, course:r.meta.course, date:r.meta.date, holes: r.meta.holeCount||state.holeCount },
-      holes
-    };
-  }
-
-  function csvHeader(){
-    return ['player_id','course','date','hole','tee_club','tee_res','ap_dist_yd','ap_target','ap_res','gir','sg_lie','sg_strokes','sg_leave_ft','first_putt_ft','putts','penalties','notes'].join(',');
-  }
-
-  function csvEsc(x){
-    if(x==null) return '';
-    const s= String(x);
-    if(/[",\n]/.test(s)){ return `"${s.replaceAll('"','""')}"`; }
-    return s;
-  }
-
-  function holeToCSVLine(payload, holeNo){
-    const h = payload.holes.find(x=>x.hole===holeNo) || {};
-    return [
-      csvEsc(payload.meta.player_id),
-      csvEsc(payload.meta.course),
-      csvEsc(payload.meta.date),
-      csvEsc(holeNo),
-      csvEsc(h.tee?.club),
-      csvEsc(h.tee?.result),
-      csvEsc(h.approach?.dist_yd),
-      csvEsc(h.approach?.target),
-      csvEsc(h.approach?.result),
-      csvEsc(h.green?.gir),
-      csvEsc(h.short_game?.lie),
-      csvEsc(h.short_game?.strokes_to_green),
-      csvEsc(h.short_game?.leave_ft),
-      csvEsc(h.green?.first_putt_ft),
-      csvEsc(h.green?.putts),
-      csvEsc((h.penalties||[]).join('|')),
-      csvEsc(h.notes||'')
-    ].join(',');
-  }
-
-  function toCSV(payload){
-    const H = csvHeader();
-    const L=[]; L.push(H);
-    payload.holes.forEach(h=>{
-      L.push([
-        csvEsc(payload.meta.player_id),
-        csvEsc(payload.meta.course),
-        csvEsc(payload.meta.date),
-        csvEsc(h.hole),
-        csvEsc(h.tee?.club),
-        csvEsc(h.tee?.result),
-        csvEsc(h.approach?.dist_yd),
-        csvEsc(h.approach?.target),
-        csvEsc(h.approach?.result),
-        csvEsc(h.green?.gir),
-        csvEsc(h.short_game?.lie),
-        csvEsc(h.short_game?.strokes_to_green),
-        csvEsc(h.short_game?.leave_ft),
-        csvEsc(h.green?.first_putt_ft),
-        csvEsc(h.green?.putts),
-        csvEsc((h.penalties||[]).join('|')),
-        csvEsc(h.notes||'')
-      ].join(','));
-    });
-    return L.join('\n');
-  }
-
-  function fromBridgeJSON(payload){
-    const r = {meta:{ playerId: payload.meta.player_id||'', course: payload.meta.course||'', date: payload.meta.date||new Date().toISOString().slice(0,10), holeCount: payload.meta.holes||18 }, holes:{} };
-    payload.holes.forEach(h=>{
-      r.holes[h.hole] = {
-        club: h.tee?.club||null,
-        tee: h.tee?.result||null,
-        dist: h.approach?.dist_yd||null,
-        target: h.approach?.target||null,
-        ap: h.approach?.result||null,
-        gir: h.green?.gir||null,
-        firstPutt: h.green?.first_putt_ft||null,
-        putts: h.green?.putts?? null,
-        sgLie: h.short_game?.lie||null,
-        sgStrokes: h.short_game?.strokes_to_green||null,
-        leaveFt: h.short_game?.leave_ft||null,
-        penalties: h.penalties||[],
-        notes: h.notes||''
-      };
-    });
-    save(r);
-    state.holeCount = r.meta.holeCount||18;
-    $('#holeCount').value = state.holeCount;
-    $('#progressBar').style.gridTemplateColumns = `repeat(${state.holeCount},1fr)`;
-  }
-
-  // kick
-  syncMeta();
-  renderDots();
-  renderHole();
-})();
+/* ========================
+   On Load
+   ======================== */
+window.addEventListener('load', ()=>{
+  COLS=[]; renderMapping();
+});
 </script>
 </body>
 </html>
