@@ -3,12 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>KLARUS — TK22 TrackMan Analyzer v2</title>
+  <title>KLARUS — TK22 TrackMan Analyzer v2.1</title>
 
   <style>
-    /* -----------------------------
-       GLOBAL STYLE (DARK/LIGHT)
-    ------------------------------*/
     :root {
       --bg: #ffffff;
       --text: #111111;
@@ -17,7 +14,6 @@
       --primary: #0057ff;
       --danger: #ff4444;
     }
-
     body.dark {
       --bg: #111111;
       --text: #eeeeee;
@@ -26,33 +22,27 @@
       --primary: #4c8dff;
       --danger: #ff5555;
     }
-
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
       margin: 0;
       padding: 0;
       background: var(--bg);
       color: var(--text);
     }
-
     .container {
       max-width: 960px;
       margin: 0 auto;
       padding: 20px;
     }
-
     h1 {
       font-size: 28px;
       margin-bottom: 6px;
     }
-
     .subtitle {
       font-size: 15px;
       opacity: 0.7;
       margin-bottom: 20px;
     }
-
-    /* Dark toggle */
     .dark-toggle {
       position: absolute;
       top: 20px;
@@ -62,11 +52,8 @@
       border-radius: 10px;
       cursor: pointer;
       border: 1px solid var(--border);
+      font-size: 13px;
     }
-
-    /* -----------------------------
-       STEP BLOCKS
-    ------------------------------*/
     .step {
       background: var(--card);
       border: 1px solid var(--border);
@@ -74,25 +61,22 @@
       border-radius: 14px;
       margin-bottom: 24px;
     }
-
     .step h2 {
       margin-top: 0;
       font-size: 20px;
     }
-
     .step .desc {
       font-size: 14px;
       opacity: 0.7;
       margin-bottom: 14px;
     }
-
     label {
       display: block;
       margin-top: 12px;
       margin-bottom: 4px;
       font-weight: 600;
+      font-size: 13px;
     }
-
     input, select {
       width: 100%;
       padding: 10px;
@@ -100,22 +84,19 @@
       border: 1px solid var(--border);
       background: var(--bg);
       color: var(--text);
+      font-size: 13px;
     }
-
     .step-complete {
       color: var(--primary);
-      font-size: 14px;
+      font-size: 13px;
       margin-top: 6px;
       font-weight: 600;
     }
-
     .error {
       color: var(--danger);
       font-size: 13px;
       margin-top: 4px;
     }
-
-    /* Buttons */
     button {
       background: var(--primary);
       color: white;
@@ -126,52 +107,13 @@
       cursor: pointer;
       font-weight: 600;
       width: 100%;
+      font-size: 14px;
     }
-
     .two-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
-
-  </style>
-</head>
-
-<body>
-
-<div class="dark-toggle" onclick="toggleDarkMode()">🌙 다크모드</div>
-
-<div class="container">
-  <h1>KLARUS — TK22 TrackMan Analyzer (v2)</h1>
-  <div class="subtitle">Kardia Practice Module — APP50 & LNG50 자동 분석 시스템</div>
-
-  <!-- STEP SYSTEM -->
-  <div id="step1" class="step">
-    <h2>STEP 1 — 모드 선택</h2>
-    <div class="desc">분석하려는 연습 종류를 선택하세요.</div>
-
-    <div class="two-grid">
-      <button type="button" onclick="selectMode('APP50')">APP50 (어프로치)</button>
-      <button type="button" onclick="selectMode('LNG50')">LNG50 (롱게임)</button>
-    </div>
-
-    <div id="step1-status" class="step-complete" style="display:none;">✔ 선택 완료</div>
-  </div>
-
-  <div id="step2" class="step">
-    <h2>STEP 2 — TrackMan 파일 업로드</h2>
-    <div class="desc">TrackMan에서 Export한 CSV 파일을 업로드하세요.</div>
-
-    <label>TrackMan CSV 파일</label>
-    <input type="file" id="fileInput" accept=".csv" onchange="handleFileUpload()">
-
-    <div id="step2-status" class="step-complete" style="display:none;">✔ 파일 업로드 완료</div>
-    <div id="file-error" class="error"></div>
-  </div>
-
-  <!-- 여기부터 PART 2 추가 -->
-
-  <style>
     .field-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -188,12 +130,6 @@
       font-size: 12px;
       opacity: 0.7;
       margin-top: 4px;
-    }
-    .btn-secondary {
-      background: transparent;
-      color: var(--primary);
-      border: 1px solid var(--primary);
-      width: 100%;
     }
     .mode-active {
       outline: 2px solid var(--primary);
@@ -218,13 +154,43 @@
       line-height: 1.4;
     }
   </style>
+</head>
 
-  <!-- STEP 3: 단위 / 샘플링 / 필드 매핑 -->
+<body>
+<div class="dark-toggle" onclick="toggleDarkMode()">🌙 다크모드</div>
+
+<div class="container">
+  <h1>KLARUS — TK22 TrackMan Analyzer (v2.1)</h1>
+  <div class="subtitle">Kardia Practice Module — APP50 & LNG50 확장 분석 (거리·분산·임팩트·안정성)</div>
+
+  <!-- STEP 1 -->
+  <div id="step1" class="step">
+    <h2>STEP 1 — 모드 선택</h2>
+    <div class="desc">분석하려는 연습 종류를 선택하세요.</div>
+    <div class="two-grid">
+      <button type="button" onclick="selectMode('APP50')">APP50 (어프로치)</button>
+      <button type="button" onclick="selectMode('LNG50')">LNG50 (롱게임)</button>
+    </div>
+    <div id="step1-status" class="step-complete" style="display:none;">✔ 모드 선택 완료</div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div id="step2" class="step">
+    <h2>STEP 2 — TrackMan CSV 업로드</h2>
+    <div class="desc">TrackMan에서 Export한 CSV 파일을 업로드하세요.</div>
+    <label>TrackMan CSV 파일</label>
+    <input type="file" id="fileInput" accept=".csv" onchange="handleFileUpload()">
+    <div id="step2-status" class="step-complete" style="display:none;">✔ 파일 업로드 완료</div>
+    <div id="file-error" class="error"></div>
+  </div>
+
+  <!-- STEP 3 -->
   <div id="step3" class="step">
-    <h2>STEP 3 — 단위, 샘플링, 필드 매핑</h2>
+    <h2>STEP 3 — 단위 · 샘플링 · 필드 매핑</h2>
     <div class="desc">
-      TrackMan CSV 헤더를 읽어 <b>Carry / Total / Offline</b> 필드를 매핑합니다.<br />
-      필수 필드: <b>Carry, Offline</b>
+      CSV 헤더를 읽어 <b>Carry / Total / Offline</b> 필드를 매핑합니다.<br/>
+      필수 필드: <b>Carry, Offline</b><br/>
+      (BallSpeed / ClubSpeed / SpinRate / Height는 자동 감지되면 추가 분석에 사용됩니다.)
     </div>
 
     <div class="field-grid">
@@ -249,7 +215,7 @@
     <div class="section-title" style="margin-top:16px;">필드 매핑 (CSV 헤더 ↔ 분석 필드)</div>
     <div class="field-grid">
       <div>
-        <label>Carry 필드</label>
+        <label>Carry 필드 (필수)</label>
         <select id="carryField" onchange="handleMappingChange('carry')">
           <option value="">(CSV 업로드 후 선택)</option>
         </select>
@@ -266,14 +232,14 @@
 
     <div class="field-grid">
       <div>
-        <label>Offline / Side 필드</label>
+        <label>Offline / Side 필드 (필수)</label>
         <select id="offlineField" onchange="handleMappingChange('offline')">
           <option value="">(CSV 업로드 후 선택)</option>
         </select>
-        <div class="small-note">예: Offline, Side (좌/우 +/− 방향)</div>
+        <div class="small-note">예: Offline, Side (좌/우 +/−)</div>
       </div>
       <div>
-        <label>헤더 미리보기</label>
+        <label>CSV 헤더 미리보기</label>
         <div id="headerPreview" class="small-note">CSV 업로드 시 헤더가 표시됩니다.</div>
       </div>
     </div>
@@ -282,36 +248,32 @@
     <div id="mapping-error" class="error"></div>
   </div>
 
-  <!-- STEP 4: APP50 / LNG50 파라미터 -->
+  <!-- STEP 4 -->
   <div id="step4" class="step">
-    <h2>STEP 4 — 모드별 파라미터 설정</h2>
+    <h2>STEP 4 — 모드별 파라미터</h2>
     <div class="desc">
-      선택한 모드에 따라 필요한 파라미터를 입력합니다.<br />
-      사용이 어렵다면 기본값 그대로 두고 실행해도 됩니다.
+      선택한 모드에 따라 필요한 파라미터를 입력합니다.<br/>
+      잘 모르겠다면 기본값 그대로 둬도 됩니다.
     </div>
 
-    <!-- APP50 설정 -->
+    <!-- APP50 -->
     <div id="app50-settings" style="display:none; margin-bottom:18px;">
       <div class="section-title">APP50 설정 (어프로치)</div>
       <div class="field-grid">
         <div>
           <label>타깃 거리 (0이면 캐리 중앙값 자동)</label>
           <input type="number" id="appTargetDist" value="140" step="0.1">
-          <div class="small-note">
-            예: 7번 아이언 평균 캐리가 140m라면 140 입력. 0이면 데이터 중앙값 사용.
-          </div>
+          <div class="small-note">예: 7i 평균 캐리 140m → 140 입력, 0이면 데이터 중앙값 사용.</div>
         </div>
         <div>
           <label>커버율 p (%)</label>
           <input type="number" id="appP" value="80" min="50" max="99" step="1">
-          <div class="small-note">
-            예: 80 → 전체 샷 중 80%를 덮는 분산 범위.
-          </div>
+          <div class="small-note">예: 80 → 전체 샷 중 80%를 덮는 분산 범위(차후 σ 타원 시각화에 사용).</div>
         </div>
       </div>
     </div>
 
-    <!-- LNG50 설정 -->
+    <!-- LNG50 -->
     <div id="lng50-settings" style="display:none;">
       <div class="section-title">LNG50 설정 (롱게임)</div>
       <div class="field-grid">
@@ -346,22 +308,20 @@
     <div id="param-error" class="error"></div>
   </div>
 
-  <!-- STEP 5: 분석 실행 -->
+  <!-- STEP 5 -->
   <div id="step5" class="step">
     <h2>STEP 5 — 분석 실행 & 결과</h2>
-    <div class="desc">
-      모든 설정을 확인한 뒤 <b>아래 버튼을 눌러 분석을 실행</b>합니다.
-    </div>
-
+    <div class="desc">모든 설정을 확인한 후 <b>아래 버튼</b>을 눌러 분석을 실행하세요.</div>
     <button type="button" onclick="runAnalysis()">분석 실행</button>
     <div id="global-error" class="error" style="margin-top:10px;"></div>
   </div>
 
-  <!-- 결과 섹션 -->
+  <!-- 결과 -->
   <div id="result-section" class="step">
     <h2>분석 결과</h2>
     <div class="desc">
-      APP50: 타깃 대비 거리·분산 / LNG50: 좌우 분포·가중 페널티 등을 요약합니다.
+      APP50: 타깃 대비 거리·방향·임팩트·스핀 안정성<br/>
+      LNG50: 좌우 분포·가중 페널티·페어웨이 컨트롤 스코어를 요약합니다.
     </div>
 
     <div class="result-title">요약</div>
@@ -373,8 +333,7 @@
     <div class="result-title" style="margin-top:16px;">세부 리포트</div>
     <pre id="result-details"></pre>
   </div>
-
-</div> <!-- /.container -->
+</div>
 
 <script>
   // -----------------------------
@@ -388,7 +347,11 @@
     mapped: {
       carry: '',
       total: '',
-      offline: ''
+      offline: '',
+      ballSpeed: '',
+      clubSpeed: '',
+      spin: '',
+      height: ''
     },
     unit: 'm',
     sampling: 'latest50'
@@ -405,6 +368,9 @@
     } else {
       btn.textContent = '🌙 다크모드';
     }
+    // 재렌더
+    const sampled = getSampledRows();
+    drawScatter(sampled);
   }
 
   // -----------------------------
@@ -412,7 +378,6 @@
   // -----------------------------
   function selectMode(mode) {
     state.mode = mode;
-
     const buttons = document.querySelectorAll('#step1 button');
     buttons.forEach(btn => btn.classList.remove('mode-active'));
 
@@ -425,7 +390,6 @@
       document.getElementById('app50-settings').style.display = 'none';
       document.getElementById('lng50-settings').style.display = 'block';
     }
-
     document.getElementById('step1-status').style.display = 'block';
     document.getElementById('global-error').textContent = '';
   }
@@ -468,7 +432,6 @@
 
     document.getElementById('headerPreview').textContent = headers.join(' | ');
 
-    // 옵션 초기화
     const carrySel = document.getElementById('carryField');
     const totalSel = document.getElementById('totalField');
     const offlineSel = document.getElementById('offlineField');
@@ -483,17 +446,14 @@
       });
     });
 
-    // 자동 매핑 시도
     autoMapFields(headers);
-
-    // 데이터 파싱
     parseRows(lines);
     validateMapping();
   }
 
   function parseRows(lines) {
     const headers = state.csvHeaders;
-    const dataLines = lines.slice(1); // 헤더 제외
+    const dataLines = lines.slice(1);
 
     const rows = [];
     dataLines.forEach(line => {
@@ -505,7 +465,6 @@
       });
       rows.push(rowObj);
     });
-
     state.rows = rows;
   }
 
@@ -533,10 +492,34 @@
       state.mapped.offline = headers[offlineIndex];
       document.getElementById('offlineField').value = headers[offlineIndex];
     }
+
+    // BallSpeed
+    let bsIndex = lower.findIndex(h => h.includes('ball') && h.includes('speed'));
+    if (bsIndex !== -1) {
+      state.mapped.ballSpeed = headers[bsIndex];
+    }
+
+    // ClubSpeed
+    let csIndex = lower.findIndex(h => h.includes('club') && h.includes('speed'));
+    if (csIndex !== -1) {
+      state.mapped.clubSpeed = headers[csIndex];
+    }
+
+    // Spin
+    let spinIndex = lower.findIndex(h => h.includes('spin'));
+    if (spinIndex !== -1) {
+      state.mapped.spin = headers[spinIndex];
+    }
+
+    // Height
+    let hIndex = lower.findIndex(h => h.includes('height') || h.includes('apex'));
+    if (hIndex !== -1) {
+      state.mapped.height = headers[hIndex];
+    }
   }
 
   // -----------------------------
-  // STEP 3: 단위 / 샘플링 / 매핑
+  // STEP 3: 단위/샘플링/매핑
   // -----------------------------
   function handleUnitChange() {
     const sel = document.getElementById('unitSelect');
@@ -564,13 +547,12 @@
 
   function validateMapping() {
     const mappingError = document.getElementById('mapping-error');
-    const requiredMissing = [];
+    const missing = [];
+    if (!state.mapped.carry) missing.push('Carry');
+    if (!state.mapped.offline) missing.push('Offline');
 
-    if (!state.mapped.carry) requiredMissing.push('Carry');
-    if (!state.mapped.offline) requiredMissing.push('Offline');
-
-    if (requiredMissing.length > 0) {
-      mappingError.textContent = '필수 필드 누락: ' + requiredMissing.join(', ');
+    if (missing.length > 0) {
+      mappingError.textContent = '필수 필드 누락: ' + missing.join(', ');
       document.getElementById('step3-status').style.display = 'none';
       return false;
     } else {
@@ -581,7 +563,7 @@
   }
 
   // -----------------------------
-  // STEP 4: 파라미터 검증 (간단)
+  // STEP 4: 파라미터 검증
   // -----------------------------
   function validateParams() {
     const paramError = document.getElementById('param-error');
@@ -648,10 +630,7 @@
 
     document.getElementById('result-summary').textContent = summaryText;
     document.getElementById('result-details').textContent = detailText;
-
     drawScatter(sampled);
-
-    globalError.textContent = '';
   }
 
   // 샘플링 적용
@@ -668,37 +647,42 @@
       indices = indices.slice(0, 50);
     } else if (state.sampling === 'random50') {
       if (n > 50) {
-        // 간단 셔플
         for (let i = n - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
           [indices[i], indices[j]] = [indices[j], indices[i]];
         }
         indices = indices.slice(0, 50);
       }
-    } else {
-      // all
     }
 
-    const carryField = state.mapped.carry;
-    const offlineField = state.mapped.offline;
-    const totalField = state.mapped.total || null;
+    const cf = state.mapped.carry;
+    const of = state.mapped.offline;
+    const tf = state.mapped.total || null;
+    const bf = state.mapped.ballSpeed || null;
+    const clf = state.mapped.clubSpeed || null;
+    const sf = state.mapped.spin || null;
+    const hf = state.mapped.height || null;
 
     const result = [];
     indices.forEach(idx => {
       const r = rows[idx];
-      const carry = parseFloat(r[carryField]);
-      const offline = parseFloat(r[offlineField]);
-      const total = totalField ? parseFloat(r[totalField]) : NaN;
+      const carry = parseFloat(r[cf]);
+      const offline = parseFloat(r[of]);
+      const total = tf ? parseFloat(r[tf]) : NaN;
+      const ballSpeed = bf ? parseFloat(r[bf]) : NaN;
+      const clubSpeed = clf ? parseFloat(r[clf]) : NaN;
+      const spin = sf ? parseFloat(r[sf]) : NaN;
+      const height = hf ? parseFloat(r[hf]) : NaN;
+
       if (!isNaN(carry) && !isNaN(offline)) {
-        result.push({ carry, offline, total });
+        result.push({ carry, offline, total, ballSpeed, clubSpeed, spin, height });
       }
     });
-
     return result;
   }
 
   // -----------------------------
-  // APP50 분석
+  // APP50 분석 (확장)
   // -----------------------------
   function analyzeAPP50(samples) {
     const targetInput = Number(document.getElementById('appTargetDist').value || '0');
@@ -706,6 +690,7 @@
 
     const carries = samples.map(s => s.carry);
     const offlines = samples.map(s => s.offline);
+    const n = samples.length;
 
     const meanCarry = mean(carries);
     const sdCarry = stdDev(carries, meanCarry);
@@ -721,39 +706,119 @@
 
     const shortCount = deltas.filter(d => d < 0).length;
     const longCount = deltas.filter(d => d > 0).length;
-    const n = samples.length;
     const shortPct = (shortCount / n) * 100;
     const longPct = (longCount / n) * 100;
 
+    const maeDist = mae(deltas);
+    const rmseDist = rmse(deltas);
+    const acc2 = bandAccuracy(deltas, 2);
+    const acc3 = bandAccuracy(deltas, 3);
+    const acc5 = bandAccuracy(deltas, 5);
+    const biasDist = shortPct - longPct;
+
     const meanOffline = mean(offlines);
     const sdOffline = stdDev(offlines, meanOffline);
+    const maeOff = mae(offlines);
+    const offBand5 = bandAccuracy(offlines, 5);
+    const offBand10 = bandAccuracy(offlines, 10);
+    const offBand15 = bandAccuracy(offlines, 15);
+
+    const leftCount = offlines.filter(o => o < 0).length;
+    const rightCount = offlines.filter(o => o > 0).length;
+    const leftPct = (leftCount / n) * 100;
+    const rightPct = (rightCount / n) * 100;
+    const biasDir = leftPct - rightPct;
+
+    // 임팩트 / 스핀 / 탄도 (있으면)
+    const ballSpeeds = samples.map(s => s.ballSpeed).filter(v => !isNaN(v));
+    const clubSpeeds = samples.map(s => s.clubSpeed).filter(v => !isNaN(v));
+    const spins = samples.map(s => s.spin).filter(v => !isNaN(v));
+    const heights = samples.map(s => s.height).filter(v => !isNaN(v));
+
+    let sfAvg = null, sfSd = null;
+    if (ballSpeeds.length === n && clubSpeeds.length === n) {
+      const sfs = samples.map(s => s.ballSpeed / s.clubSpeed);
+      sfAvg = mean(sfs);
+      sfSd = stdDev(sfs, sfAvg);
+    }
+
+    let spinAvg = null, spinSd = null, spinCv = null;
+    if (spins.length === n) {
+      spinAvg = mean(spins);
+      spinSd = stdDev(spins, spinAvg);
+      spinCv = spinAvg !== 0 ? (spinSd / spinAvg) * 100 : null;
+    }
+
+    let hAvg = null, hSd = null;
+    if (heights.length === n) {
+      hAvg = mean(heights);
+      hSd = stdDev(heights, hAvg);
+    }
 
     const summaryText =
       `APP50 — 타깃 ${target.toFixed(1)}${state.unit}, ` +
       `평균 캐리 ${meanCarry.toFixed(1)}${state.unit}, ` +
-      `거리 오차 평균 ${meanDelta.toFixed(1)}${state.unit}, ` +
-      `좌우 오프셋 평균 ${meanOffline.toFixed(1)}${state.unit}`;
+      `거리 MAE ${maeDist.toFixed(1)}${state.unit}, ` +
+      `좌/우 MAE ${maeOff.toFixed(1)}${state.unit}`;
 
     let detail = '';
     detail += `◆ 샷 개수: ${n}\n`;
     detail += `◆ 타깃 거리: ${target.toFixed(1)} ${state.unit}\n`;
     detail += `◆ 평균 캐리: ${meanCarry.toFixed(1)} ${state.unit}\n`;
     detail += `◆ 캐리 표준편차: ${sdCarry.toFixed(1)} ${state.unit}\n\n`;
+
     detail += `◆ 거리 오차(캐리 - 타깃)\n`;
-    detail += `   - 평균: ${meanDelta.toFixed(1)} ${state.unit}\n`;
+    detail += `   - 평균 오차: ${meanDelta.toFixed(1)} ${state.unit}\n`;
     detail += `   - 표준편차: ${sdDelta.toFixed(1)} ${state.unit}\n`;
+    detail += `   - MAE(절대 평균 오차): ${maeDist.toFixed(1)} ${state.unit}\n`;
+    detail += `   - RMSE(제곱 평균 오차): ${rmseDist.toFixed(1)} ${state.unit}\n`;
     detail += `   - Short 비율: ${shortPct.toFixed(1)}%\n`;
-    detail += `   - Long 비율: ${longPct.toFixed(1)}%\n\n`;
+    detail += `   - Long 비율: ${longPct.toFixed(1)}%\n`;
+    detail += `   - 거리 편향 지수(S-L): ${biasDist.toFixed(1)} (양수면 항상 짧은 쪽, 음수면 긴 쪽 편향)\n`;
+    detail += `   - ±2${state.unit} 안 적중률: ${acc2.toFixed(1)}%\n`;
+    detail += `   - ±3${state.unit} 안 적중률: ${acc3.toFixed(1)}%\n`;
+    detail += `   - ±5${state.unit} 안 적중률: ${acc5.toFixed(1)}%\n\n`;
+
     detail += `◆ 좌/우 분포 (Offline)\n`;
     detail += `   - 평균: ${meanOffline.toFixed(1)} ${state.unit}\n`;
-    detail += `   - 표준편차: ${sdOffline.toFixed(1)} ${state.unit}\n\n`;
-    detail += `※ p=${p}% 커버 타원은 현재 시각화 대신 텍스트 통계로 제공 중입니다. 필요 시 σ 타원 시각화 로직을 추가로 붙일 수 있습니다.\n`;
+    detail += `   - 표준편차: ${sdOffline.toFixed(1)} ${state.unit}\n`;
+    detail += `   - MAE(좌우 절대 평균): ${maeOff.toFixed(1)} ${state.unit}\n`;
+    detail += `   - Left 비율: ${leftPct.toFixed(1)}%\n`;
+    detail += `   - Right 비율: ${rightPct.toFixed(1)}%\n`;
+    detail += `   - 방향 편향 지수(L-R): ${biasDir.toFixed(1)} (양수면 왼쪽 편향, 음수면 오른쪽 편향)\n`;
+    detail += `   - ±5${state.unit} 안 적중률: ${offBand5.toFixed(1)}%\n`;
+    detail += `   - ±10${state.unit} 안 적중률: ${offBand10.toFixed(1)}%\n`;
+    detail += `   - ±15${state.unit} 안 적중률: ${offBand15.toFixed(1)}%\n\n`;
+
+    if (sfAvg !== null) {
+      detail += `◆ 임팩트 효율 (Smash Factor)\n`;
+      detail += `   - 평균 Smash: ${sfAvg.toFixed(3)}\n`;
+      detail += `   - Smash 표준편차: ${sfSd.toFixed(3)}\n\n`;
+    }
+
+    if (spinAvg !== null) {
+      detail += `◆ 스핀 윈도우\n`;
+      detail += `   - 평균 스핀: ${spinAvg.toFixed(0)} rpm\n`;
+      detail += `   - 스핀 표준편차: ${spinSd.toFixed(0)} rpm\n`;
+      if (spinCv !== null) {
+        detail += `   - 스핀 변동계수(CV): ${spinCv.toFixed(1)}%\n`;
+      }
+      detail += `\n`;
+    }
+
+    if (hAvg !== null) {
+      detail += `◆ 탄도 윈도우 (Height)\n`;
+      detail += `   - 평균 높이: ${hAvg.toFixed(1)} (단위: TrackMan Height/Apex)\n`;
+      detail += `   - 높이 표준편차: ${hSd.toFixed(1)}\n\n`;
+    }
+
+    detail += `※ p=${p}% 커버(σ 타원)는 현재 수치 기반 통계로 제공 중이며, 추후 2D 타원 시각화 가능.\n`;
 
     return { summaryText, detailText: detail };
   }
 
   // -----------------------------
-  // LNG50 분석
+  // LNG50 분석 (확장)
   // -----------------------------
   function analyzeLNG50(samples) {
     const p = Number(document.getElementById('lngP').value || '80');
@@ -764,16 +829,16 @@
 
     const offlines = samples.map(s => s.offline);
     const carries = samples.map(s => s.carry);
+    const n = samples.length;
 
     const meanCarry = mean(carries);
     const sdCarry = stdDev(carries, meanCarry);
 
     const meanOffline = mean(offlines);
     const sdOffline = stdDev(offlines, meanOffline);
+    const maeOff = mae(offlines);
 
-    const n = samples.length;
     let inside = 0, leftMiss = 0, rightMiss = 0;
-
     offlines.forEach(v => {
       if (v < left) leftMiss++;
       else if (v > right) rightMiss++;
@@ -785,48 +850,70 @@
     const rightPct = (rightMiss / n) * 100;
 
     const weightedPenalty = leftMiss * wL + rightMiss * wR;
+    const maxPenalty = n * Math.max(wL, wR);
+    const fairwayScore = maxPenalty > 0
+      ? 100 * (1 - weightedPenalty / maxPenalty)
+      : 100;
 
     const summaryText =
       `LNG50 — 평균 캐리 ${meanCarry.toFixed(1)}${state.unit}, ` +
-      `페어웨이 안(경계 내) ${insidePct.toFixed(1)}%, ` +
-      `가중 페널티 점수 ${weightedPenalty.toFixed(1)}`;
+      `페어웨이 안 ${insidePct.toFixed(1)}%, ` +
+      `페어웨이 컨트롤 점수 ${fairwayScore.toFixed(1)}/100`;
 
     let detail = '';
     detail += `◆ 샷 개수: ${n}\n`;
     detail += `◆ 평균 캐리: ${meanCarry.toFixed(1)} ${state.unit}\n`;
     detail += `◆ 캐리 표준편차: ${sdCarry.toFixed(1)} ${state.unit}\n\n`;
+
     detail += `◆ 좌/우 분포 (Offline)\n`;
     detail += `   - 평균: ${meanOffline.toFixed(1)} ${state.unit}\n`;
-    detail += `   - 표준편차: ${sdOffline.toFixed(1)} ${state.unit}\n\n`;
-    detail += `◆ 경계 기준 분포\n`;
-    detail += `   - 페어웨이 안 (Between ${left} ~ ${right}): ${inside}샷 (${insidePct.toFixed(1)}%)\n`;
-    detail += `   - 좌측 미스 (< ${left}): ${leftMiss}샷 (${leftPct.toFixed(1)}%)\n`;
-    detail += `   - 우측 미스 (> ${right}): ${rightMiss}샷 (${rightPct.toFixed(1)}%)\n\n`;
-    detail += `◆ 가중 페널티 점수\n`;
+    detail += `   - 표준편차: ${sdOffline.toFixed(1)} ${state.unit}\n`;
+    detail += `   - MAE(좌우 절대 평균): ${maeOff.toFixed(1)} ${state.unit}\n\n`;
+
+    detail += `◆ 경계 기준 분포 (Left < ${left}, Right > ${right})\n`;
+    detail += `   - 페어웨이 안: ${inside}샷 (${insidePct.toFixed(1)}%)\n`;
+    detail += `   - 좌측 미스: ${leftMiss}샷 (${leftPct.toFixed(1)}%)\n`;
+    detail += `   - 우측 미스: ${rightMiss}샷 (${rightPct.toFixed(1)}%)\n\n`;
+
+    detail += `◆ 가중 페널티 & 페어웨이 컨트롤 점수\n`;
     detail += `   - wL = ${wL.toFixed(1)}, wR = ${wR.toFixed(1)}\n`;
-    detail += `   - Weighted Penalty = (좌측 미스 * wL) + (우측 미스 * wR)\n`;
-    detail += `   - = ${leftMiss} * ${wL.toFixed(1)} + ${rightMiss} * ${wR.toFixed(1)} = ${weightedPenalty.toFixed(1)}\n\n`;
-    detail += `※ p=${p}% 커버 개념을 적용한 σ 타원/분산 시각화는 추후 확장 포인트입니다.\n`;
+    detail += `   - Weighted Penalty = ${leftMiss} * ${wL.toFixed(1)} + ${rightMiss} * ${wR.toFixed(1)} = ${weightedPenalty.toFixed(1)}\n`;
+    detail += `   - 이론상 최대 페널티: ${maxPenalty.toFixed(1)}\n`;
+    detail += `   - Fairway Control Score: ${fairwayScore.toFixed(1)} / 100\n\n`;
+    detail += `※ p=${p}% 커버 개념 및 σ 타원 시각화는 추후 확장 예정.\n`;
 
     return { summaryText, detailText: detail };
   }
 
   // -----------------------------
-  // 단순 통계 함수
+  // 통계 유틸
   // -----------------------------
   function mean(arr) {
     if (!arr.length) return 0;
     return arr.reduce((a, b) => a + b, 0) / arr.length;
   }
-
   function stdDev(arr, m) {
     if (!arr.length) return 0;
     const varSum = arr.reduce((acc, v) => acc + Math.pow(v - m, 2), 0) / arr.length;
     return Math.sqrt(varSum);
   }
+  function mae(arr) {
+    if (!arr.length) return 0;
+    return arr.reduce((acc, v) => acc + Math.abs(v), 0) / arr.length;
+  }
+  function rmse(arr) {
+    if (!arr.length) return 0;
+    const sumSq = arr.reduce((acc, v) => acc + v * v, 0) / arr.length;
+    return Math.sqrt(sumSq);
+  }
+  function bandAccuracy(arr, band) {
+    if (!arr.length) return 0;
+    const ok = arr.filter(v => Math.abs(v) <= band).length;
+    return (ok / arr.length) * 100;
+  }
 
   // -----------------------------
-  // Scatter Plot (Carry vs Offline)
+  // Scatter Plot
   // -----------------------------
   function drawScatter(samples) {
     const canvas = document.getElementById('scatterCanvas');
@@ -837,7 +924,6 @@
     const height = canvas.height;
 
     ctx.clearRect(0, 0, width, height);
-
     if (samples.length === 0) return;
 
     const carries = samples.map(s => s.carry);
@@ -852,16 +938,19 @@
     const plotWidth = width - padding * 2;
     const plotHeight = height - padding * 2;
 
-    // 배경
-    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--bg');
+    const bg = getComputedStyle(document.body).getPropertyValue('--bg');
+    const border = getComputedStyle(document.body).getPropertyValue('--border');
+    const text = getComputedStyle(document.body).getPropertyValue('--text');
+    const primary = getComputedStyle(document.body).getPropertyValue('--primary');
+
+    ctx.fillStyle = bg;
     ctx.fillRect(0, 0, width, height);
 
-    ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--border');
+    ctx.strokeStyle = border;
     ctx.lineWidth = 1;
     ctx.strokeRect(padding, padding, plotWidth, plotHeight);
 
-    // 축 라벨
-    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text');
+    ctx.fillStyle = text;
     ctx.font = '12px sans-serif';
     ctx.fillText('Carry (' + state.unit + ')', padding, padding - 8);
     ctx.save();
@@ -870,19 +959,16 @@
     ctx.fillText('Offline (' + state.unit + ')', 0, 0);
     ctx.restore();
 
-    // 스케일 함수
     const scaleX = (c) => {
       if (maxCarry === minCarry) return padding + plotWidth / 2;
       return padding + ((c - minCarry) / (maxCarry - minCarry)) * plotWidth;
     };
     const scaleY = (o) => {
       if (maxOffline === minOffline) return padding + plotHeight / 2;
-      // offline: 위가 +, 아래가 -가 아니라 y축 반전
       return padding + plotHeight - ((o - minOffline) / (maxOffline - minOffline)) * plotHeight;
     };
 
-    // 샷 점 그리기
-    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--primary');
+    ctx.fillStyle = primary;
     samples.forEach(s => {
       const x = scaleX(s.carry);
       const y = scaleY(s.offline);
@@ -891,7 +977,7 @@
       ctx.fill();
     });
 
-    // LNG50 경계선 표시 (선택)
+    // LNG50 경계선
     if (state.mode === 'LNG50') {
       const left = Number(document.getElementById('lngLeft').value || '-25');
       const right = Number(document.getElementById('lngRight').value || '25');
@@ -913,9 +999,6 @@
       ctx.setLineDash([]);
     }
   }
-
 </script>
 </body>
 </html>
-
-
