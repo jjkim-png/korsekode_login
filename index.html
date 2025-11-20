@@ -1,828 +1,921 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-  <title>KLARUS — TK22 TrackMan Analyzer (Pro MVP)</title>
-
-  <!-- Dependencies (CDN) -->
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>KLARUS — TK22 TrackMan Analyzer v2</title>
 
   <style>
-    :root{
-      --brand:#1b1a55; --accent:#4b3dd1; --ink:#0f172a; --muted:#6b7280;
-      --bg:#f5f7fb; --card:#ffffff; --border:#e6e8ef;
-      --good:#10b981; --bad:#ef4444; --warn:#f59e0b;
-      --radius:14px; --shadow:0 10px 30px rgba(17,18,54,.12);
+    /* -----------------------------
+       GLOBAL STYLE (DARK/LIGHT)
+    ------------------------------*/
+    :root {
+      --bg: #ffffff;
+      --text: #111111;
+      --card: #f5f5f5;
+      --border: #dddddd;
+      --primary: #0057ff;
+      --danger: #ff4444;
     }
-    :root.dark{
-      --bg:#0b0c14; --card:#10131c; --ink:#e8eaf1; --muted:#94a3b8; --border:#1f2431;
-      --brand:#7c86ff; --accent:#6d79ff; --shadow:0 10px 30px rgba(0,0,0,.35);
+
+    body.dark {
+      --bg: #111111;
+      --text: #eeeeee;
+      --card: #1e1e1e;
+      --border: #333333;
+      --primary: #4c8dff;
+      --danger: #ff5555;
     }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--ink);
-      font-family:Inter,system-ui,Segoe UI,Roboto,Apple SD Gothic Neo,Helvetica,Arial,sans-serif}
-    header{background:linear-gradient(135deg,var(--brand),#14133b 60%); color:#fff; padding:28px 18px}
-    .wrap{max-width:1200px;margin:0 auto;padding:18px}
-    h1{margin:0;font-weight:900;letter-spacing:.2px}
-    .sub{opacity:.9;font-weight:600;margin-top:6px}
 
-    .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
-    .grid{display:grid;gap:14px}
-    @media (min-width:1000px){ .grid-2{grid-template-columns:1.1fr .9fr} .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))} }
-
-    .tabs{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .tab{border:1px solid var(--border);background:var(--card);border-radius:999px;padding:8px 14px;cursor:pointer;font-weight:800}
-    .tab.active{background:var(--accent);color:#fff;border-color:transparent}
-    .input-row{display:flex;gap:10px;flex-wrap:wrap}
-    label{font-size:12px;color:var(--muted);font-weight:800;letter-spacing:.2px}
-    input[type="number"], input[type="text"], select{
-      padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);min-width:110px;color:var(--ink)
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
     }
-    input[type="file"]{padding:8px 0;color:var(--ink)}
-    .btn{background:var(--brand);color:#fff;border:none;border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:900;letter-spacing:.2px}
-    .btn.secondary{background:var(--accent)}
-    .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--border)}
-    .btn.warn{background:var(--warn);color:#111827}
-    .btn:disabled{opacity:.6;cursor:not-allowed}
-    .hint{font-size:12px;color:var(--muted)}
-    .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-    @media(min-width:1000px){ .cards{grid-template-columns:repeat(4,minmax(0,1fr))} }
-    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 12px}
-    .k{font-size:11px;color:var(--muted);font-weight:900;letter-spacing:.3px;text-transform:uppercase}
-    .v{font-size:22px;font-weight:900;margin-top:6px}
-    .v.good{color:var(--good)} .v.bad{color:var(--bad)} .v.warn{color:var(--warn)}
-    .mapping{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-    @media(min-width:1000px){ .mapping{grid-template-columns:repeat(3,minmax(0,1fr))} }
-    .sep{height:1px;background:var(--border);margin:10px 0}
-    footer{opacity:.7;font-size:12px;text-align:center;margin:24px 0 40px}
 
-    .pill{display:inline-flex;align-items:center;gap:8px;background:rgba(107,114,128,.08);border:1px solid var(--border);
-      border-radius:999px;padding:6px 10px;font-size:12px}
-    .row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
-    .badge{padding:2px 8px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;font-size:12px;color:#3730a3;font-weight:900}
-    .topbar{display:flex;align-items:center;gap:10px;justify-content:space-between}
-    .switch{display:inline-flex;gap:8px;align-items:center}
-    .switch input{width:42px;height:24px;appearance:none;background:#c7c9d4;border-radius:999px;position:relative;outline:none;cursor:pointer}
-    .switch input:checked{background:#5b67ff}
-    .switch input:before{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:all .2s}
-    .switch input:checked:before{left:21px}
-    .note{font-size:12px;color:var(--muted);line-height:1.4}
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      opacity: 0.7;
+      margin-bottom: 20px;
+    }
+
+    /* Dark toggle */
+    .dark-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: var(--card);
+      padding: 8px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+    }
+
+    /* -----------------------------
+       STEP BLOCKS
+    ------------------------------*/
+    .step {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 18px;
+      border-radius: 14px;
+      margin-bottom: 24px;
+    }
+
+    .step h2 {
+      margin-top: 0;
+      font-size: 20px;
+    }
+
+    .step .desc {
+      font-size: 14px;
+      opacity: 0.7;
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      margin-top: 12px;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .step-complete {
+      color: var(--primary);
+      font-size: 14px;
+      margin-top: 6px;
+      font-weight: 600;
+    }
+
+    .error {
+      color: var(--danger);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    /* Buttons */
+    button {
+      background: var(--primary);
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      margin-top: 18px;
+      cursor: pointer;
+      font-weight: 600;
+      width: 100%;
+    }
+
+    .two-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
   </style>
 </head>
+
 <body>
-  <header>
-    <div class="wrap topbar">
-      <div>
-        <h1>KLARUS — TK22 TrackMan Analyzer (Pro MVP)</h1>
-        <div class="sub">선수 입력 0 · TrackMan Export 업로드 → 정밀 분포·바이어스·리스크 지표 및 코칭 처방</div>
-      </div>
-      <label class="switch">
-        <input id="themeToggle" type="checkbox"/>
-        <span>Dark</span>
-      </label>
+
+<div class="dark-toggle" onclick="toggleDarkMode()">🌙 다크모드</div>
+
+<div class="container">
+  <h1>KLARUS — TK22 TrackMan Analyzer (v2)</h1>
+  <div class="subtitle">Kardia Practice Module — APP50 & LNG50 자동 분석 시스템</div>
+
+  <!-- STEP SYSTEM -->
+  <div id="step1" class="step">
+    <h2>STEP 1 — 모드 선택</h2>
+    <div class="desc">분석하려는 연습 종류를 선택하세요.</div>
+
+    <div class="two-grid">
+      <button type="button" onclick="selectMode('APP50')">APP50 (어프로치)</button>
+      <button type="button" onclick="selectMode('LNG50')">LNG50 (롱게임)</button>
     </div>
-  </header>
 
-  <main class="wrap grid grid-2">
-    <!-- LEFT: Controls & Mapping -->
-    <section class="panel">
-      <div class="tabs" id="modeTabs">
-        <div class="tab active" data-mode="APP50">어프로치 50 (APP50)</div>
-        <div class="tab" data-mode="LNG50">롱게임 타깃 50 (LNG50)</div>
+    <div id="step1-status" class="step-complete" style="display:none;">✔ 선택 완료</div>
+  </div>
+
+  <div id="step2" class="step">
+    <h2>STEP 2 — TrackMan 파일 업로드</h2>
+    <div class="desc">TrackMan에서 Export한 CSV 파일을 업로드하세요.</div>
+
+    <label>TrackMan CSV 파일</label>
+    <input type="file" id="fileInput" accept=".csv" onchange="handleFileUpload()">
+
+    <div id="step2-status" class="step-complete" style="display:none;">✔ 파일 업로드 완료</div>
+    <div id="file-error" class="error"></div>
+  </div>
+
+  <!-- 여기부터 PART 2 추가 -->
+
+  <style>
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .section-title {
+      font-weight: 700;
+      margin-top: 8px;
+      margin-bottom: 4px;
+      font-size: 15px;
+    }
+    .small-note {
+      font-size: 12px;
+      opacity: 0.7;
+      margin-top: 4px;
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+      width: 100%;
+    }
+    .mode-active {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+    .result-title {
+      font-weight: 700;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+    #scatterCanvas {
+      width: 100%;
+      max-width: 900px;
+      height: 260px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+    }
+    pre {
+      white-space: pre-wrap;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+  </style>
+
+  <!-- STEP 3: 단위 / 샘플링 / 필드 매핑 -->
+  <div id="step3" class="step">
+    <h2>STEP 3 — 단위, 샘플링, 필드 매핑</h2>
+    <div class="desc">
+      TrackMan CSV 헤더를 읽어 <b>Carry / Total / Offline</b> 필드를 매핑합니다.<br />
+      필수 필드: <b>Carry, Offline</b>
+    </div>
+
+    <div class="field-grid">
+      <div>
+        <label>단위 (Unit)</label>
+        <select id="unitSelect" onchange="handleUnitChange()">
+          <option value="m">미터 (m)</option>
+          <option value="yd">야드 (yd)</option>
+        </select>
       </div>
+      <div>
+        <label>샘플링 옵션</label>
+        <select id="samplingSelect" onchange="handleSamplingChange()">
+          <option value="latest50">최신 50샷</option>
+          <option value="first50">최초 50샷</option>
+          <option value="random50">무작위 50샷</option>
+          <option value="all">전체 사용</option>
+        </select>
+      </div>
+    </div>
 
-      <div class="sep"></div>
+    <div class="section-title" style="margin-top:16px;">필드 매핑 (CSV 헤더 ↔ 분석 필드)</div>
+    <div class="field-grid">
+      <div>
+        <label>Carry 필드</label>
+        <select id="carryField" onchange="handleMappingChange('carry')">
+          <option value="">(CSV 업로드 후 선택)</option>
+        </select>
+        <div class="small-note">예: Carry, CarryDistance</div>
+      </div>
+      <div>
+        <label>Total 필드 (선택)</label>
+        <select id="totalField" onchange="handleMappingChange('total')">
+          <option value="">(선택 사항)</option>
+        </select>
+        <div class="small-note">예: TotalDistance</div>
+      </div>
+    </div>
 
-      <div class="grid">
-        <div class="row">
-          <div>
-            <label>TrackMan Export 업로드 (CSV/XLSX)</label><br/>
-            <input type="file" id="fileInput" accept=".csv,.xlsx,.xls"/>
-            <div class="hint">50샷보다 많으면 아래 샘플링 규칙에 따라 50샷을 선택합니다.</div>
-          </div>
-          <div>
-            <label>단위</label><br/>
-            <select id="unitSelect">
-              <option value="m">미터 (m)</option>
-              <option value="yd">야드 (yd)</option>
-            </select>
-          </div>
-          <div>
-            <label>샘플링</label><br/>
-            <select id="sampleRule">
-              <option value="latest">최신 50</option>
-              <option value="first">최초 50</option>
-              <option value="random">무작위 50</option>
-            </select>
+    <div class="field-grid">
+      <div>
+        <label>Offline / Side 필드</label>
+        <select id="offlineField" onchange="handleMappingChange('offline')">
+          <option value="">(CSV 업로드 후 선택)</option>
+        </select>
+        <div class="small-note">예: Offline, Side (좌/우 +/− 방향)</div>
+      </div>
+      <div>
+        <label>헤더 미리보기</label>
+        <div id="headerPreview" class="small-note">CSV 업로드 시 헤더가 표시됩니다.</div>
+      </div>
+    </div>
+
+    <div id="step3-status" class="step-complete" style="display:none;">✔ 필수 필드 매핑 완료</div>
+    <div id="mapping-error" class="error"></div>
+  </div>
+
+  <!-- STEP 4: APP50 / LNG50 파라미터 -->
+  <div id="step4" class="step">
+    <h2>STEP 4 — 모드별 파라미터 설정</h2>
+    <div class="desc">
+      선택한 모드에 따라 필요한 파라미터를 입력합니다.<br />
+      사용이 어렵다면 기본값 그대로 두고 실행해도 됩니다.
+    </div>
+
+    <!-- APP50 설정 -->
+    <div id="app50-settings" style="display:none; margin-bottom:18px;">
+      <div class="section-title">APP50 설정 (어프로치)</div>
+      <div class="field-grid">
+        <div>
+          <label>타깃 거리 (0이면 캐리 중앙값 자동)</label>
+          <input type="number" id="appTargetDist" value="140" step="0.1">
+          <div class="small-note">
+            예: 7번 아이언 평균 캐리가 140m라면 140 입력. 0이면 데이터 중앙값 사용.
           </div>
         </div>
-
-        <div class="pill">
-          <span class="badge">필드 매핑</span>
-          파일 헤더를 자동 인식합니다. 필요 시 아래에서 수동 조정하세요. (브라우저에 매핑 저장)
-        </div>
-
-        <div id="mappingArea" class="mapping"></div>
-
-        <!-- APP50 Controls -->
-        <div id="appControls" class="grid">
-          <div class="row">
-            <div>
-              <label>타깃 거리 (APP50) — 0이면 캐리 중앙값으로 자동</label><br/>
-              <input type="number" id="targetDist" value="100" min="0" max="250" step="1"/>
-            </div>
-            <div>
-              <label>커버율 p (예: 80%)</label><br/>
-              <input type="number" id="coverageP" value="80" min="50" max="95" step="1"/>
-            </div>
+        <div>
+          <label>커버율 p (%)</label>
+          <input type="number" id="appP" value="80" min="50" max="99" step="1">
+          <div class="small-note">
+            예: 80 → 전체 샷 중 80%를 덮는 분산 범위.
           </div>
-          <div class="note">* APP50 좌표: x = Offline(좌/우, +우측), y = Carry − TargetDistance</div>
-        </div>
-
-        <!-- LNG50 Controls -->
-        <div id="lngControls" class="grid" style="display:none">
-          <div class="row">
-            <div>
-              <label>커버율 p (예: 80%)</label><br/>
-              <input type="number" id="coverageP_LNG" value="80" min="50" max="95" step="1"/>
-            </div>
-            <div>
-              <label>좌측 경계 (m)</label><br/>
-              <input type="number" id="leftBound" value="20" min="0" max="60"/>
-            </div>
-            <div>
-              <label>우측 경계 (m)</label><br/>
-              <input type="number" id="rightBound" value="20" min="0" max="60"/>
-            </div>
-          </div>
-          <div class="row">
-            <div>
-              <label>좌측 해저드 가중 (wL)</label><br/>
-              <input type="number" id="wL" value="1.5" step="0.1"/>
-            </div>
-            <div>
-              <label>우측 해저드 가중 (wR)</label><br/>
-              <input type="number" id="wR" value="1.0" step="0.1"/>
-            </div>
-          </div>
-          <div class="note">* LNG50 좌표: x = Offline(좌/우, +우측), y = Carry. 에임 최적화는 좌/우 경계·가중을 반영합니다.</div>
-        </div>
-
-        <div class="row">
-          <button class="btn" id="analyzeBtn">분석 실행</button>
-          <button class="btn secondary" id="exportPdfBtn" disabled>리포트 PDF 다운로드</button>
-          <button class="btn ghost" id="clearBtn">초기화</button>
         </div>
       </div>
-    </section>
+    </div>
 
-    <!-- RIGHT: Chart & KPIs -->
-    <section class="panel">
-      <div class="row" style="justify-content:space-between;align-items:center">
-        <div style="font-weight:900;font-size:18px">샷 분포 & p% 커버 타원</div>
-        <div class="hint" id="modeLabel">모드: APP50</div>
+    <!-- LNG50 설정 -->
+    <div id="lng50-settings" style="display:none;">
+      <div class="section-title">LNG50 설정 (롱게임)</div>
+      <div class="field-grid">
+        <div>
+          <label>커버율 p (%)</label>
+          <input type="number" id="lngP" value="80" min="50" max="99" step="1">
+        </div>
+        <div>
+          <label>좌측 경계 (m / yd)</label>
+          <input type="number" id="lngLeft" value="-25" step="0.1">
+          <div class="small-note">예: 페어웨이 폭 50m, 중앙 기준 좌측 끝 = -25</div>
+        </div>
       </div>
-      <canvas id="shotChart" height="400"></canvas>
-
-      <div class="sep"></div>
-
-      <div class="cards" id="kpiCards">
-        <!-- KPI cards will be injected -->
+      <div class="field-grid">
+        <div>
+          <label>우측 경계 (m / yd)</label>
+          <input type="number" id="lngRight" value="25" step="0.1">
+          <div class="small-note">예: 중앙 기준 우측 끝 = +25</div>
+        </div>
+        <div>
+          <label>wL / wR (좌/우 미스 가중치)</label>
+          <div class="field-grid">
+            <input type="number" id="lngWL" value="2.0" step="0.1">
+            <input type="number" id="lngWR" value="1.0" step="0.1">
+          </div>
+          <div class="small-note">예: 좌측 해저드 → wL 2.0, 우측 러프 → wR 1.0</div>
+        </div>
       </div>
-    </section>
-  </main>
+    </div>
 
-  <footer>
-    © The Klub 22 — KLARUS Pro MVP. 결과는 연습 데이터 품질과 환경 변수(온도/고도/바람)에 따라 달라질 수 있습니다.
-  </footer>
+    <div id="step4-status" class="step-complete" style="display:none;">✔ 파라미터 설정 완료</div>
+    <div id="param-error" class="error"></div>
+  </div>
+
+  <!-- STEP 5: 분석 실행 -->
+  <div id="step5" class="step">
+    <h2>STEP 5 — 분석 실행 & 결과</h2>
+    <div class="desc">
+      모든 설정을 확인한 뒤 <b>아래 버튼을 눌러 분석을 실행</b>합니다.
+    </div>
+
+    <button type="button" onclick="runAnalysis()">분석 실행</button>
+    <div id="global-error" class="error" style="margin-top:10px;"></div>
+  </div>
+
+  <!-- 결과 섹션 -->
+  <div id="result-section" class="step">
+    <h2>분석 결과</h2>
+    <div class="desc">
+      APP50: 타깃 대비 거리·분산 / LNG50: 좌우 분포·가중 페널티 등을 요약합니다.
+    </div>
+
+    <div class="result-title">요약</div>
+    <div id="result-summary" class="small-note">아직 분석이 실행되지 않았습니다.</div>
+
+    <div class="result-title" style="margin-top:16px;">샷 분포 (Carry vs Offline)</div>
+    <canvas id="scatterCanvas" width="900" height="260"></canvas>
+
+    <div class="result-title" style="margin-top:16px;">세부 리포트</div>
+    <pre id="result-details"></pre>
+  </div>
+
+</div> <!-- /.container -->
+
 <script>
-/* ========================
-   Theme Toggle
-   ======================== */
-const root = document.documentElement;
-const themeToggle = () => {
-  const dark = root.classList.toggle('dark');
-  localStorage.setItem('klarus_theme', dark?'dark':'light');
-};
-window.addEventListener('load', ()=>{
-  if(localStorage.getItem('klarus_theme')==='dark'){ root.classList.add('dark'); }
-  document.getElementById('themeToggle').checked = root.classList.contains('dark');
-});
-document.addEventListener('click', e=>{
-  if(e.target && e.target.id==='themeToggle'){ themeToggle(); }
-});
-
-/* ========================
-   Utilities (Math & Stats)
-   ======================== */
-const clamp = (v,min,max)=>Math.min(max,Math.max(min,v));
-const mean = arr => arr.reduce((a,b)=>a+b,0)/arr.length;
-const std = (arr, m=mean(arr)) => {
-  if(arr.length<2) return 0;
-  return Math.sqrt(arr.reduce((s,v)=>s+(v-m)*(v-m),0)/(arr.length-1));
-};
-const cov2 = (x,y) => {
-  const n=Math.min(x.length,y.length);
-  const mx=mean(x), my=mean(y);
-  let s=0; for(let i=0;i<n;i++) s += (x[i]-mx)*(y[i]-my);
-  return s/(n-1||1);
-};
-function eigen2x2(a,b,c,d){
-  // Symmetric cov: b≈c
-  const tr=a+d, det=a*d-b*c;
-  const disc = Math.sqrt(Math.max(0,tr*tr-4*det));
-  const l1=(tr+disc)/2, l2=(tr-disc)/2;
-  // eigenvector for l1
-  let vx= b!==0 ? l1-d : 1, vy = b!==0 ? b : 0;
-  if(b===0){ vx=1; vy=0; }
-  const n=Math.hypot(vx,vy)||1; vx/=n; vy/=n;
-  return {lambda:[l1,l2], vec:[[vx,vy],[-vy,vx]]};
-}
-// Inverse normal (Acklam)
-function invNorm(u){
-  const a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.3577518672690,-30.66479806614716,2.506628277459239];
-  const b=[-54.47609879822406,161.5858368580409,-155.6989798598866,66.80131188771972,-13.28068155288572];
-  const c=[-0.007784894002430293,-0.3223964580411365,-2.400758277161838,-2.549732539343734,4.374664141464968,2.938163982698783];
-  const d=[0.007784695709041462,0.3224671290700398,2.445134137142996,3.754408661907416];
-  const pl=0.02425, ph=1-pl;
-  let x;
-  if(u<pl){
-    const q=Math.sqrt(-2*Math.log(u));
-    x=((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5];
-    x/=(((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1;
-  }else if(u>ph){
-    const q=Math.sqrt(-2*Math.log(1-u));
-    x=-(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/(((((d[0]*q+d[1])*q+d[2])*q+d[3])*q)+1);
-  }else{
-    const q=u-0.5, r=q*q;
-    x=((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5];
-    x*=q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
-  }
-  return x;
-}
-// 2D ellipse coverage: chi-square quantile (df=2) via Wilson–Hilferty
-function chi2Quantile(p, k=2){
-  const z = invNorm(p);
-  const a = 1 - 2/(9*k) + z*Math.sqrt(2/(9*k));
-  return k * Math.pow(a,3);
-}
-function metersIfNeeded(v, unit){ return unit==='yd' ? v*0.9144 : v; }
-function toMetersArray(arr,unit){ return arr.map(v => metersIfNeeded(v,unit)); }
-// CDF for normal (for risk)
-function erf(x){ const sign=x<0?-1:1; x=Math.abs(x);
-  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
-  const t=1/(1+p*x);
-  const y=1-((((a5*t+a4)*t+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
-  return sign*y;
-}
-function normCdf(x, mu, sigma){ if(sigma<=0) return +(x>=mu); return 0.5*(1+erf((x-mu)/(sigma*Math.SQRT2))); }
-
-/* ========================
-   Chart (Scatter + Ellipse)
-   ======================== */
-let chart;
-function drawChart(points, options={}){
-  const ctx=document.getElementById('shotChart');
-  if(chart){ chart.destroy(); }
-  const datasets=[{
-    type:'scatter',
-    label:'Shots',
-    data: points.map(p=>({x:p.x, y:p.y})),
-    pointRadius:3,
-  }];
-
-  const annotations={ annotations:{} };
-  if(options.hLine!==undefined){
-    annotations.annotations.hline = {
-      type:'line', yMin: options.hLine, yMax: options.hLine,
-      borderColor:'#9CA3AF', borderDash:[6,6]
-    };
-  }
-  if(options.vLine!==undefined){
-    annotations.annotations.vline = {
-      type:'line', xMin: options.vLine, xMax: options.vLine,
-      borderColor:'#9CA3AF', borderDash:[6,6]
-    };
-  }
-  if(options.leftBound!==undefined){
-    annotations.annotations.leftBound = {
-      type:'box', xMin:-options.leftBound, xMax:-1e6,
-      yMin:-1e6, yMax:1e6, backgroundColor:'rgba(239,68,68,.08)', borderWidth:0
-    };
-  }
-  if(options.rightBound!==undefined){
-    annotations.annotations.rightBound = {
-      type:'box', xMin:options.rightBound, xMax:1e6,
-      yMin:-1e6, yMax:1e6, backgroundColor:'rgba(239,68,68,.08)', borderWidth:0
-    };
-  }
-  if(options.aimOffset!==undefined){
-    annotations.annotations.aim = {
-      type:'line', xMin:options.aimOffset, xMax:options.aimOffset,
-      borderColor:'#4b3dd1', borderWidth:2
-    };
-  }
-
-  // Ellipse overlay with chi-square scaling
-  const ellipse = options.ellipse; // {cx,cy,rx,ry,angle}
-  const plugin = {
-    id:'ellipseOverlay',
-    afterDatasetsDraw(chart,args){
-      if(!ellipse) return;
-      const {ctx, scales:{x,y}} = chart;
-      ctx.save();
-      ctx.translate(x.getPixelForValue(ellipse.cx), y.getPixelForValue(ellipse.cy));
-      ctx.rotate(-ellipse.angle); // invert y-axis orientation
-      const rxPx = Math.abs(x.getPixelForValue(ellipse.rx)-x.getPixelForValue(0));
-      const ryPx = Math.abs(y.getPixelForValue(ellipse.ry)-y.getPixelForValue(0));
-      // fill
-      ctx.globalAlpha=0.08; ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent')||'rgb(75,61,209)';
-      if(ctx.ellipse){
-        ctx.beginPath(); ctx.ellipse(0,0, rxPx, ryPx, 0, 0, Math.PI*2); ctx.fill();
-        ctx.globalAlpha=1; ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent')||'rgb(75,61,209)';
-        ctx.lineWidth=1.5; ctx.stroke();
-      }else{
-        const step=64; ctx.beginPath();
-        for(let i=0;i<=step;i++){ const t=i/step*2*Math.PI; const px=rxPx*Math.cos(t), py=ryPx*Math.sin(t);
-          if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py); }
-        ctx.fill(); ctx.globalAlpha=1; ctx.lineWidth=1.5; ctx.strokeStyle='rgb(75,61,209)'; ctx.stroke();
-      }
-      ctx.restore();
-    }
-  };
-
-  chart = new Chart(ctx, {
-    type:'scatter',
-    data:{datasets},
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, annotation: annotations },
-      scales:{
-        x:{ title:{display:true, text:'좌/우 오프셋 (m, +우측)'},
-            grid:{color:'rgba(0,0,0,.06)'}, ticks:{color:getComputedStyle(document.documentElement).getPropertyValue('--ink')} },
-        y:{ title:{display:true, text: options.yLabel || 'Carry (m)'},
-            grid:{color:'rgba(0,0,0,.06)'}, ticks:{color:getComputedStyle(document.documentElement).getPropertyValue('--ink')} }
-      }
+  // -----------------------------
+  // GLOBAL STATE
+  // -----------------------------
+  const state = {
+    mode: null,
+    csvText: '',
+    csvHeaders: [],
+    rows: [],
+    mapped: {
+      carry: '',
+      total: '',
+      offline: ''
     },
-    plugins:[plugin]
-  });
-}
-
-/* ========================
-   KPI Builders
-   ======================== */
-function buildCards(pairs){
-  const cont=document.getElementById('kpiCards');
-  cont.innerHTML='';
-  const fmt=(v,dec=2)=> (isFinite(v)? v.toFixed(dec) : '—');
-  for(const p of pairs){
-    const card=document.createElement('div');
-    card.className='card';
-    card.innerHTML = `<div class="k">${p.k}</div>
-      <div class="v ${p.cls||''}">${p.vtxt ?? fmt(p.v,p.dec??2)}</div>
-      <div class="hint">${p.hint||''}</div>`;
-    cont.appendChild(card);
-  }
-}
-/* ========================
-   File Parsing & Mapping
-   ======================== */
-let RAW_ROWS = []; // original objects
-let COLS = [];     // header keys
-let MAPPING = {};  // selected column mapping
-let MODE = 'APP50';
-
-const REQUIRED_FIELDS = [
-  {key:'carry',    label:'Carry'},
-  {key:'offline',  label:'Offline (좌/우)'},
-  {key:'club',     label:'Club', optional:true},
-  {key:'ballspd',  label:'Ball Speed', optional:true},
-  {key:'clubspd',  label:'Club Speed', optional:true},
-  {key:'la',       label:'Launch Angle', optional:true},
-  {key:'aa',       label:'Attack Angle', optional:true},
-  {key:'fa',       label:'Face Angle', optional:true},
-  {key:'cp',       label:'Club Path', optional:true},
-  {key:'ftp',      label:'Face to Path', optional:true},
-  {key:'spinax',   label:'Spin Axis', optional:true},
-];
-
-const SYNONYMS = {
-  carry:['carry','carry(m)','carry_m','carry distance','carr','carr(m)','carry (m)','carry (yd)'],
-  offline:['offline','side','lateral','offline(m)','offline distance','face deviation','side (m)','offline (yd)'],
-  club:['club','club name'],
-  ballspd:['ball speed','ballspeed'],
-  clubspd:['club speed','clubspeed'],
-  la:['launch angle','launch'],
-  aa:['attack angle','attack'],
-  fa:['face angle','face'],
-  cp:['club path','path'],
-  ftp:['face to path','face-to-path','face2path','ftop'],
-  spinax:['spin axis','spinaxis','axis'],
-};
-
-function guessColumn(key){
-  const cand = SYNONYMS[key]||[];
-  const lower = COLS.map(c=>c.toLowerCase());
-  for(const s of cand){
-    const idx = lower.indexOf(s);
-    if(idx>=0) return COLS[idx];
-  }
-  // fallback simple contains
-  for(let i=0;i<COLS.length;i++){
-    if(COLS[i].toLowerCase().includes(key)) return COLS[i];
-  }
-  return '';
-}
-
-function renderMapping(){
-  const area = document.getElementById('mappingArea');
-  area.innerHTML='';
-  COLS.sort();
-  for(const f of REQUIRED_FIELDS){
-    const div=document.createElement('div');
-    const selId=`map_${f.key}`;
-    const saved = localStorage.getItem('klarus_map_'+f.key);
-    // saved mapping reuse if still exists
-    if(saved && COLS.includes(saved)) MAPPING[f.key]=saved;
-    div.innerHTML = `
-      <label>${f.label}${f.optional? ' (선택)' : ''}</label><br/>
-      <select id="${selId}" data-map="${f.key}">
-        <option value="">— 선택 —</option>
-        ${COLS.map(c=>`<option value="${c}" ${MAPPING[f.key]===c?'selected':''}>${c}</option>`).join('')}
-      </select>
-    `;
-    area.appendChild(div);
-  }
-  area.querySelectorAll('select').forEach(sel=>{
-    sel.addEventListener('change',e=>{
-      const k=e.target.dataset.map; MAPPING[k]=e.target.value;
-      localStorage.setItem('klarus_map_'+k, MAPPING[k]||'');
-    });
-  });
-}
-
-function autoMap(){
-  MAPPING={};
-  for(const f of REQUIRED_FIELDS){
-    const g = guessColumn(f.key);
-    if(g) MAPPING[f.key]=g;
-  }
-  renderMapping();
-}
-
-function parseCSV(file){
-  return new Promise((resolve,reject)=>{
-    Papa.parse(file,{
-      header:true, dynamicTyping:true, skipEmptyLines:true,
-      complete: res => resolve(res.data),
-      error: err => reject(err)
-    });
-  });
-}
-
-function parseXLSX(file){
-  return new Promise((resolve,reject)=>{
-    const reader = new FileReader();
-    reader.onload = e=>{
-      const wb = XLSX.read(new Uint8Array(e.target.result),{type:'array'});
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json(ws,{defval:null, raw:true});
-      resolve(data);
-    };
-    reader.onerror = reject;
-    reader.readAsArrayBuffer(file);
-  });
-}
-
-document.getElementById('fileInput').addEventListener('change', async (e)=>{
-  const f=e.target.files[0]; if(!f) return;
-  try{
-    RAW_ROWS = [];
-    const ext = f.name.split('.').pop().toLowerCase();
-    if(ext==='csv') RAW_ROWS = await parseCSV(f);
-    else RAW_ROWS = await parseXLSX(f);
-
-    // Clean: remove empty rows
-    RAW_ROWS = RAW_ROWS.filter(r=>r && Object.values(r).some(v=>v!==null && v!=='' && v!==undefined));
-
-    COLS = Object.keys(RAW_ROWS[0]||{});
-    autoMap();
-    document.getElementById('exportPdfBtn').disabled=true;
-  }catch(err){
-    alert('파일을 읽는 중 오류가 발생했습니다: '+err.message);
-  }
-});
-
-/* ========================
-   Mode Tabs
-   ======================== */
-document.querySelectorAll('#modeTabs .tab').forEach(t=>{
-  t.addEventListener('click', ()=>{
-    document.querySelectorAll('#modeTabs .tab').forEach(x=>x.classList.remove('active'));
-    t.classList.add('active');
-    MODE = t.dataset.mode;
-    document.getElementById('appControls').style.display = (MODE==='APP50')?'grid':'none';
-    document.getElementById('lngControls').style.display = (MODE==='LNG50')?'grid':'none';
-    document.getElementById('modeLabel').textContent = '모드: '+MODE;
-    document.getElementById('exportPdfBtn').disabled=true;
-  });
-});
-
-/* ========================
-   Data Extraction (with sampling)
-   ======================== */
-function pickVals(rows, col){ return rows.map(r=>{
-  const v = r[col];
-  if(v===null || v===undefined || v==='') return NaN;
-  if(typeof v==='string'){ const n = parseFloat(v.replace(/[^\d.-]/g,'')); return isNaN(n)?NaN:n; }
-  return +v;
-});}
-function sampleRows(rows, rule='latest', n=50){
-  if(rows.length<=n) return rows.slice();
-  if(rule==='first') return rows.slice(0,n);
-  if(rule==='latest') return rows.slice(-n);
-  // random
-  const idx = rows.map((_,i)=>i);
-  for(let i=idx.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [idx[i],idx[j]]=[idx[j],idx[i]]; }
-  return idx.slice(0,n).sort((a,b)=>a-b).map(i=>rows[i]);
-}
-function extractData(){
-  if(!RAW_ROWS.length){ alert('먼저 파일을 업로드하세요.'); return null; }
-  const rule = document.getElementById('sampleRule').value;
-  const rows = sampleRows(RAW_ROWS, rule, 50);
-  const unit = document.getElementById('unitSelect').value;
-
-  const carryC = MAPPING.carry, offC = MAPPING.offline;
-  if(!carryC || !offC){ alert('Carry / Offline 매핑을 확인하세요.'); return null; }
-
-  // arrays
-  let carry = pickVals(rows,carryC);
-  let offline = pickVals(rows,offC);
-
-  // Clean invalid numbers
-  const X=[], Y=[];
-  for(let i=0;i<carry.length;i++){
-    if(!isFinite(carry[i]) || !isFinite(offline[i])) continue;
-    // remove obvious dummy values
-    if(Math.abs(carry[i])<0.1 && Math.abs(offline[i])<0.1) continue;
-    X.push( metersIfNeeded(offline[i], unit) ); // lateral (m)
-    Y.push( metersIfNeeded(carry[i], unit) );   // carry (m)
-  }
-  // optional spin axis
-  let spinax = MAPPING.spinax ? pickVals(rows,MAPPING.spinax) : [];
-  spinax = spinax.filter(v=>isFinite(v));
-
-  return {X, Y, spinax, rowsUsed: X.length};
-}
-
-/* ========================
-   Analytics — APP50 (2D chi-square ellipse)
-   ======================== */
-function computeAPP50(data, target, coverageP){
-  // Auto target if 0: median carry
-  if(!isFinite(target) || target<=0){
-    const sorted = data.Y.slice().sort((a,b)=>a-b); const mid = Math.floor(sorted.length/2);
-    target = (sorted.length%2 ? sorted[mid] : (sorted[mid-1]+sorted[mid])/2);
-  }
-
-  const x = data.X.slice();
-  const y = data.Y.map(v=>v - target);
-
-  const mx=mean(x), my=mean(y);
-  const sx=std(x), sy=std(y);
-  const cv=cov2(x,y);
-
-  // eigen of covariance
-  const eig = eigen2x2(sx*sx, cv, cv, sy*sy);
-  // sort eigenvalues descending
-  let lam1=eig.lambda[0], lam2=eig.lambda[1];
-  let v1=eig.vec[0], v2=eig.vec[1];
-  if(lam2>lam1){ [lam1,lam2]=[lam2,lam1]; [v1,v2]=[v2,v1]; }
-  const sig1=Math.sqrt(Math.max(lam1,1e-12));
-  const sig2=Math.sqrt(Math.max(lam2,1e-12));
-  const angle = Math.atan2(v1[1],v1[0]); // major axis direction
-
-  // chi-square scaling for central coverage p%
-  const p = clamp(coverageP/100, 0.5, 0.99);
-  const chi2 = chi2Quantile(p, 2); // df=2
-  const scale = Math.sqrt(chi2);
-  const rx = scale*sig1, ry = scale*sig2;
-
-  // Ellipse area (at 1-sigma, and at p% scale)
-  const area1 = Math.PI*sig1*sig2;
-  const KEL = Math.PI*rx*ry;
-
-  // Bias index (mean offsets)
-  const KBIx = mx, KBIy = my;
-
-  // Rectangular window approx using 1D z (for quick “폭×깊이” 감각)
-  const z = Math.abs(invNorm((1+p)/2));
-  const KWS_w = 2*z*sx;
-  const KWS_h = 2*z*sy;
-
-  // CEP50 (circular approx around mean)
-  const CEP50 = 0.589*Math.sqrt(sx*sx + sy*sy);
-
-  // Precision scores (higher better)
-  const baseX=7.0, baseY=7.0; // m — 팀 데이터로 추후 보정
-  const KLS = clamp(100*(1 - (sx/baseX)), 0, 100);
-  const KCP = clamp(100*(1 - (sy/baseY)), 0, 100);
-
-  // Spin axis consistency
-  let KSC=NaN;
-  if(data.spinax && data.spinax.length>=10){
-    const s = std(data.spinax);
-    const baseSA=6; // deg
-    KSC = clamp(100*(1 - (s/baseSA)), 0, 100);
-  }
-
-  // KPG (SG-APP 등가 지수: 거친 상대지표)
-  const radial = Math.sqrt(KBIx*KBIx + KBIy*KBIy + sx*sx + sy*sy);
-  const baseR=18; // m
-  const KPG = clamp(100*(1 - (radial/baseR)), 0, 100);
-
-  // Chart points (x, y+target), hLine at target
-  const points = x.map((xi,i)=>({x:xi, y:y[i]+target}));
-
-  // Ellipse overlay at mean (mx, target+my)
-  const ellipse = { cx: mx, cy: target+my, rx, ry, angle };
-
-  return {
-    points,
-    ellipse,
-    kpis: [
-      {k:'KCP (장단 정밀)', v:KCP, dec:1, hint:'높을수록 좋음'},
-      {k:'KLS (좌우 정밀)', v:KLS, dec:1, hint:'높을수록 좋음'},
-      {k:'KELₚ 면적 (m²)', v:KEL, dec:2, hint:`p=${coverageP}% 타원 면적`},
-      {k:'KWSₚ 폭×깊이 (m)', vtxt:`${KWS_w.toFixed(1)} × ${KWS_h.toFixed(1)}`, hint:`1D 근사, p=${coverageP}%`},
-      {k:'Bias X/Y (m)', vtxt:`${KBIx.toFixed(1)} / ${KBIy.toFixed(1)}`, hint:'좌우 / 장단 오프셋'},
-      {k:'CEP50 (m)', v:CEP50, dec:2, hint:'중앙 50% 반경 근사'},
-      {k:'KPG Index', v:KPG, dec:1, hint:'SG-APP 등가 지수(상대)'},
-      {k:'KSC (구질 일관)', v:KSC, dec:1, hint:'Spin Axis 표준편차 기반'}
-    ],
-    yLabel:'Carry (m)',
-    hLine: target,
-    vLine: 0
+    unit: 'm',
+    sampling: 'latest50'
   };
-}
 
-/* ========================
-   Analytics — LNG50
-   ======================== */
-function computeLNG50(data, coverageP, leftBound, rightBound, wL, wR){
-  const x = data.X.slice();
-  const y = data.Y.slice();
-  const mx=mean(x), sx=std(x), my=mean(y), sy=std(y);
-
-  const p=clamp(coverageP/100,0.5,0.99);
-  const chi2 = chi2Quantile(p, 2); // df=2
-  const scale = Math.sqrt(chi2);
-
-  // Ellipse radii (treat lateral & carry variance orthogonal)
-  const rx = scale*sx;
-  const ry = scale*sy;
-  const ellipse = { cx: mx, cy: my, rx, ry, angle: 0 };
-
-  // KFW required width
-  // (For 1D laterals, 2-sided central coverage uses z instead of chi2)
-  const z = Math.abs(invNorm((1+p)/2));
-  const KFW = 2*z*sx;
-
-  // Risk-optimal aim offset δ*
-  let best={delta:0, loss:Infinity};
-  for(let d=-30; d<=30; d+=0.1){
-    const mu = mx + d;
-    const pL = normCdf(-leftBound, mu, sx);      // left side hit (x<-LB)
-    const pR = 1 - normCdf(rightBound, mu, sx);  // right side hit (x>+RB)
-    const loss = wL*pL + wR*pR;
-    if(loss<best.loss){ best={delta:d, loss}; }
-  }
-  const aimOffset = best.delta;
-  const r95 = 2.45*sx;
-
-  const points = x.map((xi,i)=>({x:xi, y:y[i]}));
-  // Relative “risk safety” index
-  const denom = (wL+wR)>0 ? (wL+wR) : 1;
-  const KDR = clamp(100*(1 - best.loss/denom), 0, 100);
-
-  return {
-    points,
-    ellipse,
-    kpis: [
-      {k:'KFWₚ (필요 페어웨이 폭, m)', v:KFW, dec:1, hint:`p=${coverageP}% 기준`},
-      {k:'Aim Offset δ* (m)', v:aimOffset, dec:2, hint:'+는 우측 조준'},
-      {k:'KDR (리스크)', v:KDR, dec:1, hint:'높을수록 안전'},
-      {k:'μₓ / σₓ (m)', vtxt:`${mx.toFixed(2)} / ${sx.toFixed(2)}`, hint:'평균 좌우 / 표준편차'},
-      {k:'R95 (좌우) m', v:r95, dec:2, hint:'95% 좌우 범위 근사'},
-      {k:'샷 수', v:points.length, dec:0, hint:'분석 대상'}
-    ],
-    yLabel:'Carry (m)',
-    vLine: 0,
-    leftBound: leftBound,
-    rightBound: rightBound,
-    aimOffset: aimOffset
-  };
-}
-
-/* ========================
-   Analyze Button
-   ======================== */
-document.getElementById('analyzeBtn').addEventListener('click', ()=>{
-  const dat = extractData();
-  if(!dat) return;
-  if(dat.rowsUsed<8){ alert('안정적인 분포 추정을 위해 최소 8샷 이상이 필요합니다.'); return; }
-
-  if(MODE==='APP50'){
-    const target = +document.getElementById('targetDist').value;
-    const p = +document.getElementById('coverageP').value || 80;
-    const res = computeAPP50(dat, target, p);
-    drawChart(res.points, {ellipse:res.ellipse, hLine:res.hLine, vLine:res.vLine, yLabel:res.yLabel});
-    buildCards(res.kpis);
-  }else{
-    const p = +document.getElementById('coverageP_LNG').value || 80;
-    const LB = +document.getElementById('leftBound').value || 20;
-    const RB = +document.getElementById('rightBound').value || 20;
-    const wL = +document.getElementById('wL').value || 1.5;
-    const wR = +document.getElementById('wR').value || 1.0;
-    const res = computeLNG50(dat, p, LB, RB, wL, wR);
-    drawChart(res.points, {ellipse:res.ellipse, vLine:0, leftBound:LB, rightBound:RB, aimOffset:res.aimOffset, yLabel:res.yLabel});
-    buildCards(res.kpis);
-  }
-  document.getElementById('exportPdfBtn').disabled=false;
-});
-
-/* ========================
-   Export PDF
-   ======================== */
-document.getElementById('exportPdfBtn').addEventListener('click', async ()=>{
-  if(!chart){ alert('먼저 분석을 실행하세요.'); return; }
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({unit:'pt', format:'a4'});
-  const pad=36;
-
-  // Title
-  pdf.setFont('helvetica','bold'); pdf.setFontSize(16);
-  pdf.text('KLARUS — TrackMan Analyzer (Pro MVP)', pad, 42);
-  pdf.setFont('helvetica','normal'); pdf.setFontSize(11);
-  pdf.text(`Mode: ${MODE} · Generated: ${new Date().toLocaleString()}`, pad, 60);
-
-  // Chart image
-  const img = chart.toBase64Image('image/png',1);
-  pdf.addImage(img,'PNG', pad, 80, 523, 320);
-
-  // KPIs in two columns
-  const cards = [...document.querySelectorAll('#kpiCards .card')];
-  let y=420, colX=pad, colW=260, rowH=54, col=0;
-  pdf.setFont('helvetica','bold'); pdf.setFontSize(12);
-  pdf.text('Key Metrics', pad, y); y+=14;
-  pdf.setFont('helvetica','normal'); pdf.setFontSize(11);
-
-  let iStart=0;
-  for(let i=0;i<cards.length;i++){
-    const c = cards[i];
-    const k = c.querySelector('.k').textContent.trim();
-    const v = c.querySelector('.v').textContent.trim();
-    const h = c.querySelector('.hint').textContent.trim();
-    pdf.text(`• ${k}: ${v}`, colX, y);
-    y += 14;
-    pdf.setTextColor(120); pdf.text(`   ${h}`, colX, y); pdf.setTextColor(0);
-    y += rowH-14;
-    if(y>780){ // next column or page
-      if(col===0){ col=1; colX=pad+colW+24; y=434; }
-      else{ pdf.addPage(); y=60; col=0; colX=pad; }
+  // -----------------------------
+  // DARK MODE
+  // -----------------------------
+  function toggleDarkMode() {
+    document.body.classList.toggle('dark');
+    const btn = document.querySelector('.dark-toggle');
+    if (document.body.classList.contains('dark')) {
+      btn.textContent = '☀️ 라이트모드';
+    } else {
+      btn.textContent = '🌙 다크모드';
     }
   }
 
-  // Footer
-  pdf.setFontSize(9); pdf.setTextColor(120);
-  pdf.text('© The Klub 22 — KLARUS Pro MVP. Results depend on input quality and environment.', pad, 800);
+  // -----------------------------
+  // STEP 1: 모드 선택
+  // -----------------------------
+  function selectMode(mode) {
+    state.mode = mode;
 
-  pdf.save(`KLARUS_Report_${MODE}_${Date.now()}.pdf`);
-});
+    const buttons = document.querySelectorAll('#step1 button');
+    buttons.forEach(btn => btn.classList.remove('mode-active'));
 
-/* ========================
-   Clear
-   ======================== */
-document.getElementById('clearBtn').addEventListener('click', ()=>{
-  RAW_ROWS=[]; COLS=[]; MAPPING={};
-  document.getElementById('fileInput').value='';
-  document.getElementById('mappingArea').innerHTML='';
-  document.getElementById('kpiCards').innerHTML='';
-  if(chart){ chart.destroy(); chart=null; }
-  document.getElementById('exportPdfBtn').disabled=true;
-});
+    if (mode === 'APP50') {
+      buttons[0].classList.add('mode-active');
+      document.getElementById('app50-settings').style.display = 'block';
+      document.getElementById('lng50-settings').style.display = 'none';
+    } else {
+      buttons[1].classList.add('mode-active');
+      document.getElementById('app50-settings').style.display = 'none';
+      document.getElementById('lng50-settings').style.display = 'block';
+    }
 
-/* ========================
-   On Load
-   ======================== */
-window.addEventListener('load', ()=>{
-  COLS=[]; renderMapping();
-});
+    document.getElementById('step1-status').style.display = 'block';
+    document.getElementById('global-error').textContent = '';
+  }
+
+  // -----------------------------
+  // STEP 2: 파일 업로드
+  // -----------------------------
+  function handleFileUpload() {
+    const input = document.getElementById('fileInput');
+    const file = input.files[0];
+    const fileError = document.getElementById('file-error');
+    fileError.textContent = '';
+
+    if (!file) {
+      fileError.textContent = 'CSV 파일을 선택해주세요.';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      state.csvText = e.target.result;
+      parseCSVHeaders();
+      document.getElementById('step2-status').style.display = 'block';
+      document.getElementById('global-error').textContent = '';
+    };
+    reader.onerror = () => {
+      fileError.textContent = '파일을 읽는 중 오류가 발생했습니다.';
+    };
+    reader.readAsText(file);
+  }
+
+  function parseCSVHeaders() {
+    const text = state.csvText;
+    const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+    if (lines.length === 0) return;
+
+    const headerLine = lines[0];
+    const headers = headerLine.split(',').map(h => h.trim());
+    state.csvHeaders = headers;
+
+    document.getElementById('headerPreview').textContent = headers.join(' | ');
+
+    // 옵션 초기화
+    const carrySel = document.getElementById('carryField');
+    const totalSel = document.getElementById('totalField');
+    const offlineSel = document.getElementById('offlineField');
+
+    [carrySel, totalSel, offlineSel].forEach(sel => {
+      sel.innerHTML = '<option value="">(선택)</option>';
+      headers.forEach(h => {
+        const opt = document.createElement('option');
+        opt.value = h;
+        opt.textContent = h;
+        sel.appendChild(opt);
+      });
+    });
+
+    // 자동 매핑 시도
+    autoMapFields(headers);
+
+    // 데이터 파싱
+    parseRows(lines);
+    validateMapping();
+  }
+
+  function parseRows(lines) {
+    const headers = state.csvHeaders;
+    const dataLines = lines.slice(1); // 헤더 제외
+
+    const rows = [];
+    dataLines.forEach(line => {
+      if (!line.trim()) return;
+      const cells = line.split(',');
+      const rowObj = {};
+      headers.forEach((h, idx) => {
+        rowObj[h] = (cells[idx] !== undefined) ? cells[idx].trim() : '';
+      });
+      rows.push(rowObj);
+    });
+
+    state.rows = rows;
+  }
+
+  function autoMapFields(headers) {
+    const lower = headers.map(h => h.toLowerCase());
+
+    // Carry
+    let carryIndex = lower.findIndex(h => h.includes('carry'));
+    if (carryIndex === -1) carryIndex = lower.findIndex(h => h.includes('carr'));
+    if (carryIndex !== -1) {
+      state.mapped.carry = headers[carryIndex];
+      document.getElementById('carryField').value = headers[carryIndex];
+    }
+
+    // Total
+    let totalIndex = lower.findIndex(h => h.includes('total') || h.includes('totdist'));
+    if (totalIndex !== -1) {
+      state.mapped.total = headers[totalIndex];
+      document.getElementById('totalField').value = headers[totalIndex];
+    }
+
+    // Offline / Side
+    let offlineIndex = lower.findIndex(h => h.includes('offline') || h.includes('side'));
+    if (offlineIndex !== -1) {
+      state.mapped.offline = headers[offlineIndex];
+      document.getElementById('offlineField').value = headers[offlineIndex];
+    }
+  }
+
+  // -----------------------------
+  // STEP 3: 단위 / 샘플링 / 매핑
+  // -----------------------------
+  function handleUnitChange() {
+    const sel = document.getElementById('unitSelect');
+    state.unit = sel.value;
+  }
+
+  function handleSamplingChange() {
+    const sel = document.getElementById('samplingSelect');
+    state.sampling = sel.value;
+  }
+
+  function handleMappingChange(field) {
+    const mappingError = document.getElementById('mapping-error');
+    mappingError.textContent = '';
+
+    if (field === 'carry') {
+      state.mapped.carry = document.getElementById('carryField').value;
+    } else if (field === 'total') {
+      state.mapped.total = document.getElementById('totalField').value;
+    } else if (field === 'offline') {
+      state.mapped.offline = document.getElementById('offlineField').value;
+    }
+    validateMapping();
+  }
+
+  function validateMapping() {
+    const mappingError = document.getElementById('mapping-error');
+    const requiredMissing = [];
+
+    if (!state.mapped.carry) requiredMissing.push('Carry');
+    if (!state.mapped.offline) requiredMissing.push('Offline');
+
+    if (requiredMissing.length > 0) {
+      mappingError.textContent = '필수 필드 누락: ' + requiredMissing.join(', ');
+      document.getElementById('step3-status').style.display = 'none';
+      return false;
+    } else {
+      mappingError.textContent = '';
+      document.getElementById('step3-status').style.display = 'block';
+      return true;
+    }
+  }
+
+  // -----------------------------
+  // STEP 4: 파라미터 검증 (간단)
+  // -----------------------------
+  function validateParams() {
+    const paramError = document.getElementById('param-error');
+    paramError.textContent = '';
+
+    if (state.mode === 'APP50') {
+      const p = Number(document.getElementById('appP').value || '0');
+      if (p <= 0 || p >= 100) {
+        paramError.textContent = 'APP50 커버율 p는 50~99 사이로 설정해주세요.';
+        document.getElementById('step4-status').style.display = 'none';
+        return false;
+      }
+    } else if (state.mode === 'LNG50') {
+      const p = Number(document.getElementById('lngP').value || '0');
+      if (p <= 0 || p >= 100) {
+        paramError.textContent = 'LNG50 커버율 p는 50~99 사이로 설정해주세요.';
+        document.getElementById('step4-status').style.display = 'none';
+        return false;
+      }
+    }
+
+    document.getElementById('step4-status').style.display = 'block';
+    return true;
+  }
+
+  // -----------------------------
+  // STEP 5: 분석 실행
+  // -----------------------------
+  function runAnalysis() {
+    const globalError = document.getElementById('global-error');
+    globalError.textContent = '';
+
+    if (!state.mode) {
+      globalError.textContent = 'STEP 1에서 APP50 또는 LNG50 모드를 선택해주세요.';
+      return;
+    }
+    if (!state.csvText || state.rows.length === 0) {
+      globalError.textContent = 'STEP 2에서 TrackMan CSV 파일을 업로드해주세요.';
+      return;
+    }
+    if (!validateMapping()) {
+      globalError.textContent = 'STEP 3에서 필수 필드를 매핑해주세요.';
+      return;
+    }
+    if (!validateParams()) {
+      globalError.textContent = 'STEP 4 파라미터 설정을 확인해주세요.';
+      return;
+    }
+
+    const sampled = getSampledRows();
+    if (sampled.length === 0) {
+      globalError.textContent = '유효한 샷 데이터가 없습니다.';
+      return;
+    }
+
+    let summaryText = '';
+    let detailText = '';
+
+    if (state.mode === 'APP50') {
+      ({ summaryText, detailText } = analyzeAPP50(sampled));
+    } else {
+      ({ summaryText, detailText } = analyzeLNG50(sampled));
+    }
+
+    document.getElementById('result-summary').textContent = summaryText;
+    document.getElementById('result-details').textContent = detailText;
+
+    drawScatter(sampled);
+
+    globalError.textContent = '';
+  }
+
+  // 샘플링 적용
+  function getSampledRows() {
+    const rows = state.rows;
+    const n = rows.length;
+    if (n === 0) return [];
+
+    let indices = Array.from({ length: n }, (_, i) => i);
+
+    if (state.sampling === 'latest50') {
+      indices = indices.slice(-50);
+    } else if (state.sampling === 'first50') {
+      indices = indices.slice(0, 50);
+    } else if (state.sampling === 'random50') {
+      if (n > 50) {
+        // 간단 셔플
+        for (let i = n - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [indices[i], indices[j]] = [indices[j], indices[i]];
+        }
+        indices = indices.slice(0, 50);
+      }
+    } else {
+      // all
+    }
+
+    const carryField = state.mapped.carry;
+    const offlineField = state.mapped.offline;
+    const totalField = state.mapped.total || null;
+
+    const result = [];
+    indices.forEach(idx => {
+      const r = rows[idx];
+      const carry = parseFloat(r[carryField]);
+      const offline = parseFloat(r[offlineField]);
+      const total = totalField ? parseFloat(r[totalField]) : NaN;
+      if (!isNaN(carry) && !isNaN(offline)) {
+        result.push({ carry, offline, total });
+      }
+    });
+
+    return result;
+  }
+
+  // -----------------------------
+  // APP50 분석
+  // -----------------------------
+  function analyzeAPP50(samples) {
+    const targetInput = Number(document.getElementById('appTargetDist').value || '0');
+    const p = Number(document.getElementById('appP').value || '80');
+
+    const carries = samples.map(s => s.carry);
+    const offlines = samples.map(s => s.offline);
+
+    const meanCarry = mean(carries);
+    const sdCarry = stdDev(carries, meanCarry);
+
+    let target = targetInput;
+    if (!target || target === 0) {
+      target = meanCarry;
+    }
+
+    const deltas = carries.map(c => c - target);
+    const meanDelta = mean(deltas);
+    const sdDelta = stdDev(deltas, meanDelta);
+
+    const shortCount = deltas.filter(d => d < 0).length;
+    const longCount = deltas.filter(d => d > 0).length;
+    const n = samples.length;
+    const shortPct = (shortCount / n) * 100;
+    const longPct = (longCount / n) * 100;
+
+    const meanOffline = mean(offlines);
+    const sdOffline = stdDev(offlines, meanOffline);
+
+    const summaryText =
+      `APP50 — 타깃 ${target.toFixed(1)}${state.unit}, ` +
+      `평균 캐리 ${meanCarry.toFixed(1)}${state.unit}, ` +
+      `거리 오차 평균 ${meanDelta.toFixed(1)}${state.unit}, ` +
+      `좌우 오프셋 평균 ${meanOffline.toFixed(1)}${state.unit}`;
+
+    let detail = '';
+    detail += `◆ 샷 개수: ${n}\n`;
+    detail += `◆ 타깃 거리: ${target.toFixed(1)} ${state.unit}\n`;
+    detail += `◆ 평균 캐리: ${meanCarry.toFixed(1)} ${state.unit}\n`;
+    detail += `◆ 캐리 표준편차: ${sdCarry.toFixed(1)} ${state.unit}\n\n`;
+    detail += `◆ 거리 오차(캐리 - 타깃)\n`;
+    detail += `   - 평균: ${meanDelta.toFixed(1)} ${state.unit}\n`;
+    detail += `   - 표준편차: ${sdDelta.toFixed(1)} ${state.unit}\n`;
+    detail += `   - Short 비율: ${shortPct.toFixed(1)}%\n`;
+    detail += `   - Long 비율: ${longPct.toFixed(1)}%\n\n`;
+    detail += `◆ 좌/우 분포 (Offline)\n`;
+    detail += `   - 평균: ${meanOffline.toFixed(1)} ${state.unit}\n`;
+    detail += `   - 표준편차: ${sdOffline.toFixed(1)} ${state.unit}\n\n`;
+    detail += `※ p=${p}% 커버 타원은 현재 시각화 대신 텍스트 통계로 제공 중입니다. 필요 시 σ 타원 시각화 로직을 추가로 붙일 수 있습니다.\n`;
+
+    return { summaryText, detailText: detail };
+  }
+
+  // -----------------------------
+  // LNG50 분석
+  // -----------------------------
+  function analyzeLNG50(samples) {
+    const p = Number(document.getElementById('lngP').value || '80');
+    const left = Number(document.getElementById('lngLeft').value || '-25');
+    const right = Number(document.getElementById('lngRight').value || '25');
+    const wL = Number(document.getElementById('lngWL').value || '2');
+    const wR = Number(document.getElementById('lngWR').value || '1');
+
+    const offlines = samples.map(s => s.offline);
+    const carries = samples.map(s => s.carry);
+
+    const meanCarry = mean(carries);
+    const sdCarry = stdDev(carries, meanCarry);
+
+    const meanOffline = mean(offlines);
+    const sdOffline = stdDev(offlines, meanOffline);
+
+    const n = samples.length;
+    let inside = 0, leftMiss = 0, rightMiss = 0;
+
+    offlines.forEach(v => {
+      if (v < left) leftMiss++;
+      else if (v > right) rightMiss++;
+      else inside++;
+    });
+
+    const insidePct = (inside / n) * 100;
+    const leftPct = (leftMiss / n) * 100;
+    const rightPct = (rightMiss / n) * 100;
+
+    const weightedPenalty = leftMiss * wL + rightMiss * wR;
+
+    const summaryText =
+      `LNG50 — 평균 캐리 ${meanCarry.toFixed(1)}${state.unit}, ` +
+      `페어웨이 안(경계 내) ${insidePct.toFixed(1)}%, ` +
+      `가중 페널티 점수 ${weightedPenalty.toFixed(1)}`;
+
+    let detail = '';
+    detail += `◆ 샷 개수: ${n}\n`;
+    detail += `◆ 평균 캐리: ${meanCarry.toFixed(1)} ${state.unit}\n`;
+    detail += `◆ 캐리 표준편차: ${sdCarry.toFixed(1)} ${state.unit}\n\n`;
+    detail += `◆ 좌/우 분포 (Offline)\n`;
+    detail += `   - 평균: ${meanOffline.toFixed(1)} ${state.unit}\n`;
+    detail += `   - 표준편차: ${sdOffline.toFixed(1)} ${state.unit}\n\n`;
+    detail += `◆ 경계 기준 분포\n`;
+    detail += `   - 페어웨이 안 (Between ${left} ~ ${right}): ${inside}샷 (${insidePct.toFixed(1)}%)\n`;
+    detail += `   - 좌측 미스 (< ${left}): ${leftMiss}샷 (${leftPct.toFixed(1)}%)\n`;
+    detail += `   - 우측 미스 (> ${right}): ${rightMiss}샷 (${rightPct.toFixed(1)}%)\n\n`;
+    detail += `◆ 가중 페널티 점수\n`;
+    detail += `   - wL = ${wL.toFixed(1)}, wR = ${wR.toFixed(1)}\n`;
+    detail += `   - Weighted Penalty = (좌측 미스 * wL) + (우측 미스 * wR)\n`;
+    detail += `   - = ${leftMiss} * ${wL.toFixed(1)} + ${rightMiss} * ${wR.toFixed(1)} = ${weightedPenalty.toFixed(1)}\n\n`;
+    detail += `※ p=${p}% 커버 개념을 적용한 σ 타원/분산 시각화는 추후 확장 포인트입니다.\n`;
+
+    return { summaryText, detailText: detail };
+  }
+
+  // -----------------------------
+  // 단순 통계 함수
+  // -----------------------------
+  function mean(arr) {
+    if (!arr.length) return 0;
+    return arr.reduce((a, b) => a + b, 0) / arr.length;
+  }
+
+  function stdDev(arr, m) {
+    if (!arr.length) return 0;
+    const varSum = arr.reduce((acc, v) => acc + Math.pow(v - m, 2), 0) / arr.length;
+    return Math.sqrt(varSum);
+  }
+
+  // -----------------------------
+  // Scatter Plot (Carry vs Offline)
+  // -----------------------------
+  function drawScatter(samples) {
+    const canvas = document.getElementById('scatterCanvas');
+    if (!canvas || !canvas.getContext) return;
+    const ctx = canvas.getContext('2d');
+
+    const width = canvas.width;
+    const height = canvas.height;
+
+    ctx.clearRect(0, 0, width, height);
+
+    if (samples.length === 0) return;
+
+    const carries = samples.map(s => s.carry);
+    const offlines = samples.map(s => s.offline);
+
+    const minCarry = Math.min(...carries);
+    const maxCarry = Math.max(...carries);
+    const minOffline = Math.min(...offlines);
+    const maxOffline = Math.max(...offlines);
+
+    const padding = 40;
+    const plotWidth = width - padding * 2;
+    const plotHeight = height - padding * 2;
+
+    // 배경
+    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--bg');
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--border');
+    ctx.lineWidth = 1;
+    ctx.strokeRect(padding, padding, plotWidth, plotHeight);
+
+    // 축 라벨
+    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text');
+    ctx.font = '12px sans-serif';
+    ctx.fillText('Carry (' + state.unit + ')', padding, padding - 8);
+    ctx.save();
+    ctx.translate(10, padding + plotHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Offline (' + state.unit + ')', 0, 0);
+    ctx.restore();
+
+    // 스케일 함수
+    const scaleX = (c) => {
+      if (maxCarry === minCarry) return padding + plotWidth / 2;
+      return padding + ((c - minCarry) / (maxCarry - minCarry)) * plotWidth;
+    };
+    const scaleY = (o) => {
+      if (maxOffline === minOffline) return padding + plotHeight / 2;
+      // offline: 위가 +, 아래가 -가 아니라 y축 반전
+      return padding + plotHeight - ((o - minOffline) / (maxOffline - minOffline)) * plotHeight;
+    };
+
+    // 샷 점 그리기
+    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--primary');
+    samples.forEach(s => {
+      const x = scaleX(s.carry);
+      const y = scaleY(s.offline);
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // LNG50 경계선 표시 (선택)
+    if (state.mode === 'LNG50') {
+      const left = Number(document.getElementById('lngLeft').value || '-25');
+      const right = Number(document.getElementById('lngRight').value || '25');
+
+      const yLeft = scaleY(left);
+      const yRight = scaleY(right);
+
+      ctx.strokeStyle = '#ff8800';
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(padding, yLeft);
+      ctx.lineTo(padding + plotWidth, yLeft);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(padding, yRight);
+      ctx.lineTo(padding + plotWidth, yRight);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
 </script>
 </body>
 </html>
+
+
